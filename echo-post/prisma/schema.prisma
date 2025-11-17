@@ -50,3 +50,11 @@ model Post {
   @@index([slug])
 }
 
+model Comment{
+  id String @id @default(uuid())
+  PostId String
+  UserId String
+  content String
+  parentId String
+  createdAt DATE
+}
