@@ -14,13 +14,39 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum PostStatus{
+  DRAFT
+  PUBLISHED
+}
+
 model User {
-  id        Int      @id @default(autoincrement())
-  name      String
+  id        String   @id @default(uuid())
   email     String   @unique
   password  String
-  role      String   @default("USER") 
+  name      String?
+  username  String?  @unique
+  bio       String?
+  avatarUrl String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  posts    Post[]
+
+}
+
+model Post {
+  id          String  @id @default(uuid())
+  title       String 
+  slug        String   @unique 
+  content     String
+  coverImage  String?
+  status      PostStatus    @default(DRAFT)
+  authorId    String
+  createdAt   DateTime @default(now()) 
+  updatedAt   DateTime @updatedAt
+
+  author      User     @relation(fields: [authorId], references: [id])
+
+  @@index([authorId])
+  @@index([slug])
 }
 
