@@ -1,16 +1,14 @@
 import { NextResponse } from "next/server";
-import  prisma  from "../../../../lib/prisma";
+import prisma from "../../../../lib/prisma";
 import jwt from "jsonwebtoken";
 
-const JWT_SECRET = process.env.JWT_SECRET || "supersecret";
+const JWT_SECRET = process.env.JWT_SECRET!;
 
 export async function GET(req: Request) {
   try {
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) return NextResponse.json({ error: "No token provided" }, { status: 401 });
-
-    const token = authHeader.replace("Bearer ", "");
-    const decoded = jwt.verify(token, JWT_SECRET) as { id: string, email: string };
+  
+    const token = req.headers.get("authorization")?.split(" ")[1];
+    const decoded = jwt.verify(token!, JWT_SECRET) as { id: string; email: string };
 
     const user = await prisma.user.findUnique({
       where: { id: decoded.id },

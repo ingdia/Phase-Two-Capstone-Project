@@ -1,17 +1,25 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 import jwt from "jsonwebtoken";
 
-const JWT_SECRET = process.env.JWT_SECRET || "supersecret";
+const JWT_SECRET = process.env.JWT_SECRET!;
 
-export function requireAuth(req: NextRequest) {
-  const authHeader = req.headers.get("Authorization");
-  if (!authHeader) throw new Error("No token provided");
+export function middleware(req: NextRequest) {
+  const token = req.headers.get("authorization")?.split(" ")[1];
 
-  const token = authHeader.replace("Bearer ", "");
+  if (!token) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as { id: string, email: string };
-    return decoded;
-  } catch {
-    throw new Error("Invalid token");
+    jwt.verify(token, JWT_SECRET);
+    return NextResponse.next();
+  } catch (error) {
+    return NextResponse.json({ error: "Invalid or expired token" }, { status: 403 });
   }
 }
+
+// Apply middleware to all /api/protected/* routes
+export const config = {
+  matcher: ["/protected/:path*"],
+};
