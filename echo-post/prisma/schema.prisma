@@ -83,3 +83,17 @@ model Like {
   @@index([postId])
 }
 
+
+model Follow {
+  id          String   @id @default(uuid())
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
+
+  follower  User @relation("UserFollows", fields: [followerId], references: [id])
+  following User @relation("UserFollowedBy", fields: [followingId], references: [id])
+
+  @@unique([followerId, followingId]) // Prevent following twice
+  @@index([followerId])
+  @@index([followingId])
+}
