@@ -14,47 +14,57 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum PostStatus{
+enum PostStatus {
   DRAFT
   PUBLISHED
 }
 
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
+  id        String    @id @default(uuid())
+  email     String    @unique
   password  String
   name      String?
-  username  String?  @unique
+  username  String?   @unique
   bio       String?
   avatarUrl String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  posts    Post[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  posts     Post[]
+  comments  Comment[]
 
+  @@index([username])
+  @@index([email])
 }
 
 model Post {
-  id          String  @id @default(uuid())
-  title       String 
-  slug        String   @unique 
-  content     String
-  coverImage  String?
-  status      PostStatus    @default(DRAFT)
-  authorId    String
-  createdAt   DateTime @default(now()) 
-  updatedAt   DateTime @updatedAt
+  id         String     @id @default(uuid())
+  title      String
+  slug       String     @unique
+  content    String
+  coverImage String?
+  status     PostStatus @default(DRAFT)
+  authorId   String
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
 
-  author      User     @relation(fields: [authorId], references: [id])
+  author   User      @relation(fields: [authorId], references: [id])
+  comments Comment[]
 
   @@index([authorId])
   @@index([slug])
 }
 
-model Comment{
-  id String @id @default(uuid())
-  PostId String
-  UserId String
-  content String
-  parentId String
-  createdAt DATE
+model Comment {
+  id        String   @id @default(uuid())
+  content   String
+  postId    String
+  authorId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  post   Post @relation(fields: [postId], references: [id])
+  author User @relation(fields: [authorId], references: [id])
+
+  @@index([postId])
+  @@index([authorId])
 }
