@@ -97,3 +97,24 @@ model Follow {
   @@index([followerId])
   @@index([followingId])
 }
+
+model Tag {
+  id    String @id @default(uuid())
+  name  String @unique
+  slug  String @unique
+
+  posts PostTag[]
+}
+
+model PostTag {
+  id     String @id @default(uuid())
+  postId String
+  tagId  String
+
+  post Post @relation(fields: [postId], references: [id])
+  tag  Tag  @relation(fields: [tagId], references: [id])
+
+  @@unique([postId, tagId]) // Prevent duplicate mapping
+  @@index([postId])
+  @@index([tagId])
+}
