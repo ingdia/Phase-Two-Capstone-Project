@@ -23,8 +23,8 @@ function Navbar() {
         </div>
 
         <div className="space-x-2 font-semibold">
-          <Link href="/signin" className="hover:underline border-r-2 px-2 border-gray-300">Sign In</Link>
-          <Link href="/signup" className="hover:underline">Sign Up</Link>
+          <Link href="/login" className="hover:underline border-r-2 px-2 border-gray-300">Sign In</Link>
+          <Link href="/register" className="hover:underline">Sign Up</Link>
         </div>
       </div>
 
