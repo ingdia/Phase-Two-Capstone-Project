@@ -10,10 +10,11 @@ const playfair = Playfair_Display({
 
 function Navbar() {
   return (
-    <header className="w-full border-b bg-white font-serif">
+    <header className="w-full border-b bg-white font-serif shadow-sm">
+      
       {/* Top bar */}
-      <div className="bg-pink-900 flex justify-between items-center px-4 py-2 text-sm">
-        <div>
+      <div className="bg-gray-100 flex justify-between items-center px-4 py-2 text-sm text-gray-600">
+        <div className="text-pink-600">
           {new Date().toLocaleDateString("en-US", {
             month: "short",
             day: "numeric",
@@ -21,35 +22,36 @@ function Navbar() {
           })}
         </div>
 
-        <div className="space-x-4 font-bold ">
-          <Link href="/Sign In">
-            <button className="border-r px-3">Sign In</button>
-          </Link>
-          <Link href="/Sign In">
-            <button>Sign Up</button>
-          </Link>
+        <div className="space-x-2 font-semibold">
+          <Link href="/signin" className="hover:underline border-r-2 px-2 border-gray-300">Sign In</Link>
+          <Link href="/signup" className="hover:underline">Sign Up</Link>
         </div>
       </div>
 
-      {/* buttom  bar */}
-      <div className="flex flex-col md:flex-row justify-between items-center px-6 py-3 text-pink-900 font-bold space-y-2 md:space-y-0">
-        <div className={` ${playfair.className} italic text-xl font-semibold `}>
+      {/* Bottom bar */}
+      <div className="flex flex-col md:flex-row justify-between items-center px-6 py-3 space-y-2 md:space-y-0">
+        <div className={`${playfair.className} italic text-2xl font-semibold text-black`}>
           Echo Post
         </div>
 
-        <div className="hover:bg-pink-100 p-2 rounded-full ">
+        
+        <div className="w-full max-w-md">
           <SearchBar />
         </div>
 
-        <nav className="space-x-6 text-sm">
-          <Link href="/" className="hover:text-pink-600">
-            Home
-          </Link>
-          <Link href="/community" className="hover:text-pink-600">
-            Community
+        
+        <nav className="flex space-x-6 items-center text-gray-800 text-sm font-medium">
+          <Link href="/" className="hover:text-black">Home</Link>
+          <Link href="/community" className="hover:text-black">Community</Link>
+          <Link 
+            href="/write" 
+            className="bg-pink-600 text-white px-4 py-1 rounded-full hover:bg-gray-800"
+          >
+            Write
           </Link>
         </nav>
       </div>
+
     </header>
   );
 }
