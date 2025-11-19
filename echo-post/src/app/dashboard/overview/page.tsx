@@ -5,13 +5,13 @@ const featuredPosts = [
   {
     title: "The Art of Writing Fiction",
     author: "Diane Ingire",
-    cover: "/images/featured1.jpg",
+    cover: "/image/image.png",
     excerpt: "Learn the secrets to captivating storytelling...",
   },
   {
     title: "Digital Publishing Trends 2025",
     author: "John Doe",
-    cover: "/images/featured2.jpg",
+    cover: "/image/image.png",
     excerpt: "Explore what’s next in the world of digital publishing...",
   },
 ];
@@ -20,23 +20,23 @@ const latestPosts = [
   {
     title: "Building Your Writing Routine",
     author: "Alice Smith",
-    cover: "/images/post1.jpg",
+    cover: "/image/image.png",
     excerpt: "Consistency is key for writers. Here's a guide...",
     time: "5 min read",
   },
   {
     title: "Understanding Your Audience",
     author: "Mark Johnson",
-    cover: "/images/post2.jpg",
+    cover: "/image/image.png",
     excerpt: "To write effectively, you need to know who you're writing for...",
     time: "7 min read",
   },
 ];
 
 const trendingAuthors = [
-  { name: "Diane Ingire", avatar: "/images/avatar1.jpg" },
-  { name: "John Doe", avatar: "/images/avatar2.jpg" },
-  { name: "Alice Smith", avatar: "/images/avatar3.jpg" },
+  { name: "Diane Ingire", avatar: "/image/image.png" },
+  { name: "John Doe", avatar: "/image/image.png" },
+  { name: "Alice Smith", avatar: "/image/image.png" },
 ];
 
 const categories = [
@@ -49,27 +49,7 @@ const categories = [
 
 export default function page() {
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Navbar */}
-      <nav className="bg-white shadow-sm fixed w-full z-50">
-        <div className="max-w-7xl mx-auto flex justify-between items-center px-6 py-4">
-          <h1 className="text-2xl font-bold text-gray-900">Readerly</h1>
-          <div className="flex items-center gap-6">
-            <a href="#" className="text-gray-700 hover:text-gray-900">
-              Home
-            </a>
-            <a href="#" className="text-gray-700 hover:text-gray-900">
-              Explore
-            </a>
-            <a href="#" className="text-gray-700 hover:text-gray-900">
-              Sign In
-            </a>
-            <button className="bg-black text-white px-4 py-2 rounded-full hover:bg-gray-800 transition">
-              Write
-            </button>
-          </div>
-        </div>
-      </nav>
+    <div className="min-h-screen bg-pink-50 text-black">
 
       <main className="pt-24 max-w-7xl mx-auto px-6 flex gap-8">
         {/* Main Content */}
