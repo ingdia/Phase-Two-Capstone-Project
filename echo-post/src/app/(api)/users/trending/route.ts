@@ -6,8 +6,6 @@ export async function GET(req: Request) {
         const url = new URL(req.url);
         const limit = Math.min(Number(url.searchParams.get("limit") || "3"), 10);
 
-        // Get users with their follower counts
-        // Prisma doesn't support direct ordering by relation count, so we fetch more and sort
         const users = await prisma.user.findMany({
             take: 50, // Fetch more than needed to ensure we get top users
             select: {
