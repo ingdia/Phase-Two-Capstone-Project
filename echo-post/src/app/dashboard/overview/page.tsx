@@ -1,168 +1,152 @@
-import React from "react";
-import { Bookmark, User, Heart, Clock } from "lucide-react";
+"use client";
 
-const featuredPosts = [
-  {
-    title: "The Art of Writing Fiction",
-    author: "Diane Ingire",
-    cover: "/image/image.png",
-    excerpt: "Learn the secrets to captivating storytelling...",
-  },
-  {
-    title: "Digital Publishing Trends 2025",
-    author: "John Doe",
-    cover: "/image/image.png",
-    excerpt: "Explore what’s next in the world of digital publishing...",
-  },
-];
+import { useState } from "react";
 
-const latestPosts = [
-  {
-    title: "Building Your Writing Routine",
-    author: "Alice Smith",
-    cover: "/image/image.png",
-    excerpt: "Consistency is key for writers. Here's a guide...",
-    time: "5 min read",
-  },
-  {
-    title: "Understanding Your Audience",
-    author: "Mark Johnson",
-    cover: "/image/image.png",
-    excerpt: "To write effectively, you need to know who you're writing for...",
-    time: "7 min read",
-  },
-];
 
-const trendingAuthors = [
-  { name: "Diane Ingire", avatar: "/image/image.png" },
-  { name: "John Doe", avatar: "/image/image.png" },
-  { name: "Alice Smith", avatar: "/image/image.png" },
-];
+import Banner from "@/components/dash/overview/Banner";
+import Categories from "@/components//dash/overview/Categories";
+import FeaturedStories from "@/components/dash/overview/FeaturedStories";
+import LatestArticles from "@/components/dash/overview/LatestArticles";
+import TrendingAuthors from "@/components/dash/overview/TrendingAuthors";
+import TrendingStories from "@/components/dash/overview/TrendingStories";
 
-const categories = [
-  "Technology",
-  "Books",
-  "Lifestyle",
-  "Self-development",
-  "Travel",
-];
 
-export default function page() {
+import { Post, Category, Author } from "@/types/glob";
+
+export default function HomePage() {
+
+
+  const categories: Category[] = [
+    { name: "Technology", color: "bg-pink-900 text-white" },
+    { name: "Design", color: "bg-gray-800 text-white" },
+    { name: "Lifestyle", color: "bg-black text-white" },
+    { name: "Coding", color: "bg-gray-200 text-black" },
+  ];
+
+  const featuredPosts: Post[] = [
+    {
+      id: "1",
+      title: "Mastering the Art of Digital Writing",
+      excerpt: "Learn how to create engaging, relevant, and impactful content.",
+      cover: "/image/image.png",
+      author: "Jane Doe",
+      readTime: "5 min read",
+      likes: 320,
+    },
+    {
+      id: "2",
+      title: "The Rise of AI in Creative Industries",
+      excerpt: "AI is changing how we create. Here's what you should know.",
+      cover: "/image/image.png",
+      author: "Alice Green",
+      readTime: "7 min read",
+      likes: 210,
+    },
+  ];
+
+  const latestPosts: Post[] = [
+    {
+      id: "3",
+      title: "The Psychology Behind Great Design",
+      excerpt: "Understanding users at a deeper level can improve UI/UX.",
+      cover: "/image/image.png",
+      author: "Mark Philips",
+      time: "2h ago",
+      likes: 12,
+    },
+    {
+      id: "4",
+      title: "Top 10 Tools Every Developer Should Know in 2025",
+      excerpt: "These tools will boost your productivity instantly.",
+      cover: "/image/image.png",
+      author: "Clara Nduwimana",
+      time: "4h ago",
+      likes: 98,
+    },
+  ];
+
+  const authors: Author[] = [
+    {
+      id: "a1",
+      name: "John Amos",
+      avatar: "/image/image.png",
+      followers: "12.4k followers",
+    },
+    {
+      id: "a2",
+      name: "Linda K.",
+      avatar: "/image/image.png",
+      followers: "9.1k followers",
+    },
+     {
+      id: "a3",
+      name: "Linda K.",
+      avatar: "/image/image.png",
+      followers: "9.1k followers",
+    },
+  ];
+
+
+
+  const [bookmarked, setBookmarked] = useState<Record<string, boolean>>({});
+  const [liked, setLiked] = useState<Record<string, boolean>>({});
+  const [followed, setFollowed] = useState<Record<string, boolean>>({});
+
+  const toggleBookmark = (id: string) => {
+    setBookmarked((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const toggleLike = (id: string) => {
+    setLiked((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const toggleFollow = (id: string) => {
+    setFollowed((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
+
   return (
-    <div className="min-h-screen bg-pink-50 text-black">
+    <div className="max-w-7xl mx-auto px-6 py-10 text-gray-800">
 
-      <main className="pt-24 max-w-7xl mx-auto px-6 flex gap-8">
-        {/* Main Content */}
-        <div className="flex-1 flex flex-col gap-12">
-          {/* Featured Section */}
-          <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {featuredPosts.map((post, i) => (
-              <div
-                key={i}
-                className="relative rounded-lg overflow-hidden shadow-lg cursor-pointer hover:shadow-2xl transition"
-              >
-                <img
-                  src={post.cover}
-                  alt={post.title}
-                  className="w-full h-64 object-cover"
-                />
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4 text-white">
-                  <h2 className="text-xl font-bold">{post.title}</h2>
-                  <p className="text-sm mt-1">{post.excerpt}</p>
-                  <p className="mt-2 text-xs">{post.author}</p>
-                </div>
-              </div>
-            ))}
-          </section>
+      
+      <Banner />
 
-          {/* Latest Articles */}
-          <section>
-            <h3 className="text-xl font-semibold mb-4">Latest Articles</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {latestPosts.map((post, i) => (
-                <div
-                  key={i}
-                  className="flex gap-4 bg-white rounded-lg shadow hover:shadow-md transition p-4 cursor-pointer"
-                >
-                  <img
-                    src={post.cover}
-                    alt={post.title}
-                    className="w-32 h-20 object-cover rounded"
-                  />
-                  <div className="flex flex-col justify-between">
-                    <h4 className="font-semibold text-gray-900">{post.title}</h4>
-                    <p className="text-gray-600 text-sm">{post.excerpt}</p>
-                    <div className="flex items-center gap-3 text-gray-500 text-xs mt-2">
-                      <User size={14} />
-                      <span>{post.author}</span>
-                      <Clock size={14} />
-                      <span>{post.time}</span>
-                      <Heart size={14} />
-                      <Bookmark size={14} />
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
+      
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
 
-          {/* Categories */}
-          <section>
-            <h3 className="text-xl font-semibold mb-3">Categories</h3>
-            <div className="flex flex-wrap gap-2">
-              {categories.map((cat, i) => (
-                <span
-                  key={i}
-                  className="bg-gray-200 px-3 py-1 rounded-full text-gray-700 text-sm cursor-pointer hover:bg-gray-300 transition"
-                >
-                  {cat}
-                </span>
-              ))}
-            </div>
-          </section>
+       
+        <div className="lg:col-span-2 space-y-10">
+
+          
+          <Categories categories={categories} />
+
+         
+          <FeaturedStories posts={featuredPosts} />
+
+         
+          <LatestArticles
+            latestPosts={latestPosts}
+            bookmarked={bookmarked}
+            liked={liked}
+            onBookmark={toggleBookmark}
+            onLike={toggleLike}
+          />
         </div>
 
-        {/* Sidebar */}
-        <aside className="w-72 hidden lg:flex flex-col gap-6">
-          {/* Trending Authors */}
-          <div className="bg-white p-4 rounded-lg shadow">
-            <h4 className="font-semibold text-gray-900 mb-3">Recommended Authors</h4>
-            <div className="flex flex-col gap-3">
-              {trendingAuthors.map((author, i) => (
-                <div
-                  key={i}
-                  className="flex items-center justify-between cursor-pointer hover:bg-gray-50 p-2 rounded transition"
-                >
-                  <div className="flex items-center gap-3">
-                    <img
-                      src={author.avatar}
-                      alt={author.name}
-                      className="w-10 h-10 rounded-full object-cover"
-                    />
-                    <span className="text-gray-800 font-medium">{author.name}</span>
-                  </div>
-                  <button className="text-sm text-blue-500 font-medium hover:underline">
-                    Follow
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
+        
+        <aside className="space-y-10">
 
-          {/* Trending Stories (Optional) */}
-          <div className="bg-white p-4 rounded-lg shadow">
-            <h4 className="font-semibold text-gray-900 mb-3">Trending Stories</h4>
-            <ul className="flex flex-col gap-2 text-gray-700 text-sm">
-              <li className="cursor-pointer hover:text-gray-900">Top 10 Writing Tips</li>
-              <li className="cursor-pointer hover:text-gray-900">Digital Publishing Trends</li>
-              <li className="cursor-pointer hover:text-gray-900">How to Build Your Brand</li>
-            </ul>
-          </div>
+        <TrendingAuthors
+            authors={authors}
+            followed={followed}
+            onFollow={toggleFollow}
+          />
+          <TrendingStories />
+
+          
+
         </aside>
-      </main>
-
-      {/* Footer */}
-
+      </div>
     </div>
   );
 }
