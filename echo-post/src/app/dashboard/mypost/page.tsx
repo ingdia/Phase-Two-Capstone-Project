@@ -2,7 +2,9 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import {Heart,MessageCircle,Pencil,Eye,Calendar,} from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Heart, MessageCircle, Pencil, Eye, Calendar } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 
 type Author = {
   id: string;
@@ -31,6 +33,8 @@ type Post = {
 };
 
 export default function PostsPageUI() {
+  const { user, token, initializing } = useAuth();
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<"DRAFTS" | "PUBLISHED">("DRAFTS");
 
   const [drafts, setDrafts] = useState<Post[]>([]);
@@ -38,22 +42,40 @@ export default function PostsPageUI() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (!initializing && !user) {
+      router.replace("/login");
+      return;
+    }
+
+    if (user && token) {
+      fetchPosts();
+    }
+  }, [user, token, initializing, router]);
+
   const fetchPosts = async () => {
+    if (!user || !token) return;
+
     try {
       setLoading(true);
       setError(null);
 
-      const [draftRes, publicRes] = await Promise.all([
-        fetch("/post?status=DRAFT", { credentials: "include" }),
-        fetch("/post?status=PUBLISHED", { credentials: "include" }),
+      // Fetch posts filtered by current user's ID
+      const [draftRes, pubRes] = await Promise.all([
+        fetch(`/post?status=DRAFT&author=${user.id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        fetch(`/post?status=PUBLISHED&author=${user.id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
       ]);
 
-      if (!draftRes.ok || !publicRes.ok) {
+      if (!draftRes.ok || !pubRes.ok) {
         throw new Error("Failed to fetch posts");
       }
 
       const draftData = await draftRes.json();
-      const pubData = await publicRes.json();
+      const pubData = await pubRes.json();
 
       setDrafts(draftData.items || []);
       setPublished(pubData.items || []);
@@ -64,10 +86,6 @@ export default function PostsPageUI() {
       setLoading(false);
     }
   };
-
-  useEffect(() => {
-    fetchPosts();
-  }, []);
 
   const currentPosts = activeTab === "DRAFTS" ? drafts : published;
 
@@ -207,7 +225,7 @@ export default function PostsPageUI() {
 
               {activeTab === "DRAFTS" ? (
                 <Link
-                  href={`/post/edit/${post.id}`}
+                  href={`/dashboard/mypost/${post.slug}`}
                   className="bg-pink-900 text-white p-2 rounded-full hover:bg-pink-800"
                   title="Edit post"
                 >
@@ -215,7 +233,7 @@ export default function PostsPageUI() {
                 </Link>
               ) : (
                 <Link
-                  href={`/post/${post.slug}`}
+                  href={`/dashboard/mypost/${post.slug}`}
                   className="bg-pink-900 text-white p-2 rounded-full hover:bg-pink-800"
                   title="View post"
                 >

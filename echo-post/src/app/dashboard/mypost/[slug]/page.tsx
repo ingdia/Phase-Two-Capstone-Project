@@ -1,35 +1,95 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { Heart, Bookmark, Share2, Clock } from "lucide-react";
+import { useParams, useRouter } from "next/navigation";
+import { Heart, Bookmark, Share2, Clock, Loader2 } from "lucide-react";
 import Link from "next/link";
-import { Post } from "@/types/glob";
+import { useAuth } from "@/context/AuthContext";
 
-const mockPost: Post & { contentHtml: string } = {
-  id: "post-1",
-  title: "How to Build a Thoughtful Writing Habit",
-  excerpt: "Small routines compound — here’s a practical system to write more often.",
-  cover: "/images/post1.jpg",
-  author: "Diane Ingire",
-  readTime: "8 min read",
-  likes: 420,
-  time: "Nov 20, 2025",
-  contentHtml: `
-    <p>Writing is a craft and a habit. The best way to improve is to write consistently.</p>
-    <h3>1. Block time</h3>
-    <p>Schedule dedicated writing blocks and treat them like meetings.</p>
-    <h3>2. Write for a reader</h3>
-    <p>Imagine the person who will benefit from your words.</p>
-    <blockquote>A small piece repeated daily will change your life.</blockquote>
-    <p>...more content...</p>
-  `,
+type Author = {
+  id: string;
+  name: string | null;
+  username: string | null;
+  avatarUrl: string | null;
+  bio: string | null;
+};
+
+type Tag = {
+  name: string;
+  slug: string;
+};
+
+type Post = {
+  id: string;
+  slug: string;
+  title: string;
+  content: string;
+  coverImage: string | null;
+  createdAt: string;
+  updatedAt: string;
+  readTime: string;
+  author: Author;
+  tags: Tag[];
+  likeCount: number;
+  _count: {
+    comments: number;
+    likes: number;
+  };
 };
 
 export default function ReaderPage() {
+  const params = useParams();
+  const router = useRouter();
+  const { user, token } = useAuth();
+  const slug = params?.slug as string;
+
+  const [post, setPost] = useState<Post | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [clapped, setClapped] = useState(false);
   const [bookmarked, setBookmarked] = useState(false);
   const [progress, setProgress] = useState(0);
   const articleRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (slug) {
+      fetchPost();
+    }
+  }, [slug]);
+
+  const fetchPost = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const res = await fetch(`/post/slug/${slug}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+
+      if (!res.ok) {
+        if (res.status === 404) {
+          setError("Post not found");
+        } else {
+          setError("Failed to load post");
+        }
+        return;
+      }
+
+      const data = await res.json();
+      setPost(data);
+
+      // Check if user has liked this post
+      if (user && data.likes) {
+        const userLiked = data.likes.some((like: any) => like.userId === user.id);
+        setClapped(userLiked);
+      }
+    } catch (err) {
+      console.error("Error fetching post:", err);
+      setError("Failed to load post");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     const onScroll = () => {
@@ -44,7 +104,86 @@ export default function ReaderPage() {
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
-  }, []);
+  }, [post]);
+
+  const handleLike = async () => {
+    if (!user || !token || !post) return;
+
+    try {
+      const res = await fetch(`/post/${post.id}/like`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (res.ok) {
+        setClapped(!clapped);
+        // Refresh post to get updated like count
+        fetchPost();
+      }
+    } catch (err) {
+      console.error("Error liking post:", err);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-pink-900" />
+      </div>
+    );
+  }
+
+  if (error || !post) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-600 text-lg mb-4">{error || "Post not found"}</p>
+          <Link
+            href="/dashboard/mypost"
+            className="text-pink-900 hover:underline"
+          >
+            ← Back to My Posts
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  const authorName = post.author.name || post.author.username || "Anonymous";
+  const authorInitials = authorName.charAt(0).toUpperCase();
+
+  // Convert content to HTML for display (basic markdown-like rendering)
+  const formatContent = (content: string) => {
+    // Simple formatting - if content is already HTML, use it, otherwise format as plain text
+    if (content.includes("<") && content.includes(">")) {
+      return content;
+    }
+    // Convert newlines to <p> tags
+    return content
+      .split("\n\n")
+      .map((para) => {
+        if (!para.trim()) return "";
+        // Handle headers (lines starting with #)
+        if (para.trim().startsWith("# ")) {
+          return `<h1 class="text-3xl font-bold my-4">${para.trim().substring(2)}</h1>`;
+        }
+        if (para.trim().startsWith("## ")) {
+          return `<h2 class="text-2xl font-bold my-3">${para.trim().substring(3)}</h2>`;
+        }
+        if (para.trim().startsWith("### ")) {
+          return `<h3 class="text-xl font-bold my-2">${para.trim().substring(4)}</h3>`;
+        }
+        // Handle quotes
+        if (para.trim().startsWith("> ")) {
+          return `<blockquote class="border-l-4 border-gray-300 pl-4 italic my-4 text-gray-600">${para.trim().substring(2)}</blockquote>`;
+        }
+        return `<p class="mb-4 leading-relaxed">${para.trim().replace(/\n/g, "<br />")}</p>`;
+      })
+      .join("");
+  };
 
   return (
     <div className="min-h-screen bg-white">
@@ -58,33 +197,67 @@ export default function ReaderPage() {
 
       <main className="max-w-5xl mx-auto px-6 py-10">
         {/* Cover */}
-        <div className="w-full rounded-lg overflow-hidden shadow-lg mb-8">
-          <img src={mockPost.cover} className="w-full h-80 object-cover" alt={mockPost.title} />
-        </div>
+        {post.coverImage && (
+          <div className="w-full rounded-lg overflow-hidden shadow-lg mb-8">
+            <img 
+              src={post.coverImage} 
+              className="w-full h-80 object-cover" 
+              alt={post.title} 
+            />
+          </div>
+        )}
 
         {/* Meta & actions */}
         <header className="mb-8">
-          <h1 className="text-4xl font-bold text-black mb-3">{mockPost.title}</h1>
+          <h1 className="text-4xl font-bold text-black mb-3">{post.title}</h1>
+
+          {/* Tags */}
+          {post.tags && post.tags.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-4">
+              {post.tags.map((tag) => (
+                <span
+                  key={tag.slug}
+                  className="text-xs bg-pink-900/10 text-pink-900 px-2 py-1 rounded-full"
+                >
+                  {tag.name}
+                </span>
+              ))}
+            </div>
+          )}
 
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-pink-900 rounded-full flex items-center justify-center text-white font-semibold">
-                {mockPost.author.charAt(0)}
-              </div>
+              {post.author.avatarUrl ? (
+                <img
+                  src={post.author.avatarUrl}
+                  alt={authorName}
+                  className="w-12 h-12 rounded-full object-cover"
+                />
+              ) : (
+                <div className="w-12 h-12 bg-pink-900 rounded-full flex items-center justify-center text-white font-semibold">
+                  {authorInitials}
+                </div>
+              )}
               <div>
-                <p className="text-sm font-medium text-black">{mockPost.author}</p>
-                <p className="text-xs text-gray-500">
-                  {mockPost.time} • <Clock className="inline w-3 h-3 mx-1" /> {mockPost.readTime}
+                <Link
+                  href={`/dashboard/profile`}
+                  className="text-sm font-medium text-black hover:text-pink-900"
+                >
+                  {authorName}
+                </Link>
+                <p className="text-xs text-gray-500 flex items-center gap-1">
+                  <Clock className="inline w-3 h-3" />
+                  {new Date(post.createdAt).toLocaleDateString()} • {post.readTime}
                 </p>
               </div>
             </div>
 
             <div className="flex items-center gap-3">
               <button
-                onClick={() => setClapped((s) => !s)}
+                onClick={handleLike}
                 className={`px-3 py-1 rounded-md border ${clapped ? "bg-pink-900 text-white border-pink-900" : "bg-white text-black border-gray-200"} transition`}
               >
-                <Heart className="inline w-4 h-4 mr-2" /> {clapped ? mockPost.likes + 1 : mockPost.likes}
+                <Heart className={`inline w-4 h-4 mr-2 ${clapped ? "fill-current" : ""}`} /> {post._count.likes + (clapped ? 1 : 0)}
               </button>
 
               <button
@@ -104,8 +277,11 @@ export default function ReaderPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Article column */}
           <article className="lg:col-span-2 prose prose-lg max-w-none text-gray-800" ref={articleRef}>
-            {/* Rendered HTML content (dangerouslySetInnerHTML since content is HTML) */}
-            <div dangerouslySetInnerHTML={{ __html: mockPost.contentHtml }} />
+            {/* Rendered content */}
+            <div 
+              className="prose prose-lg max-w-none"
+              dangerouslySetInnerHTML={{ __html: formatContent(post.content) }}
+            />
           </article>
 
           {/* Right sidebar: recommended */}

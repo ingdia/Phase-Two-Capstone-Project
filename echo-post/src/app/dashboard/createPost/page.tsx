@@ -1,18 +1,26 @@
 "use client";
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
+import { Upload, X, Image as ImageIcon, Loader2 } from "lucide-react";
+import RichTextEditor from "@/components/editor/RichTextEditor";
 
 export default function CreatePostPage() {
   const router = useRouter();
+  const { token, user } = useAuth();
   const submitRef = useRef<HTMLButtonElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [dragActive, setDragActive] = useState(false);
 
   const [title, setTitle] = useState("");
   const [slug, setSlug] = useState("");
   const [content, setContent] = useState("");
   const [status, setStatus] = useState<"DRAFT" | "PUBLISHED">("DRAFT");
   const [tags, setTags] = useState<string[]>([]);
-  const [coverImage, setCoverImage] = useState<File | null>(null);
-  const [preview, setPreview] = useState("");
+  const [tagInput, setTagInput] = useState("");
+  const [coverImageUrl, setCoverImageUrl] = useState("");
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const handleTitleChange = (value: string) => {
     setTitle(value);
@@ -24,76 +32,152 @@ export default function CreatePostPage() {
     );
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setCoverImage(file);
-    setPreview(URL.createObjectURL(file));
-  };
-
   const uploadToCloudinary = async (file: File): Promise<string> => {
+    if (!token) {
+      throw new Error("Not authenticated");
+    }
+
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("upload_preset", process.env.NEXT_PUBLIC_CLOUDINARY_PRESET!);
 
-    const res = await fetch(
-      `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
-      {
-        method: "POST",
-        body: formData,
-      }
-    );
+    const res = await fetch("/image", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formData,
+    });
+
+    if (!res.ok) {
+      throw new Error("Failed to upload image");
+    }
 
     const data = await res.json();
-    return data.secure_url;
+    return data.url;
+  };
+
+  const handleImageUpload = async (file: File) => {
+    setUploadingImage(true);
+    try {
+      const url = await uploadToCloudinary(file);
+      setCoverImageUrl(url);
+    } catch (error) {
+      console.error("Upload error:", error);
+      alert("Failed to upload image. Please try again.");
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      alert("Please select an image file");
+      return;
+    }
+    handleImageUpload(file);
+  };
+
+  const handleDrag = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+
+    const file = e.dataTransfer.files?.[0];
+    if (file && file.type.startsWith("image/")) {
+      handleImageUpload(file);
+    } else {
+      alert("Please drop an image file");
+    }
+  }, []);
+
+  const removeCoverImage = () => {
+    setCoverImageUrl("");
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const addTag = () => {
+    const trimmed = tagInput.trim().toLowerCase().replace(/\s+/g, "-");
+    if (trimmed && !tags.includes(trimmed)) {
+      setTags([...tags, trimmed]);
+      setTagInput("");
+    }
+  };
+
+  const removeTag = (tagToRemove: string) => {
+    setTags(tags.filter((tag) => tag !== tagToRemove));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    let uploadedImageUrl = "";
-
-    
-    if (coverImage) {
-      uploadedImageUrl = await uploadToCloudinary(coverImage);
+    if (!title.trim() || !content.trim()) {
+      alert("Please fill in title and content");
+      return;
     }
 
-    const body = {
-      title,
-      slug,
-      content,
-      status,
-      tags,
-      coverImage: uploadedImageUrl || null,
-    };
+    if (!token) {
+      alert("Please login to create a post");
+      router.push("/login");
+      return;
+    }
 
-    const token = localStorage.getItem("token");
+    setSubmitting(true);
 
-    const res = await fetch("/post", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(body),
-    });
+    try {
+      const body = {
+        title: title.trim(),
+        content: content.trim(),
+        coverImage: coverImageUrl || null,
+        tagSlugs: tags,
+        status,
+      };
 
-    if (res.ok) {
-        alert("the story added")
-      router.push("/dashboard/explore");
-    } else {
-      const err = await res.json();
-      alert(err.error || "Failed to create post");
+      const res = await fetch("/post", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(body),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        alert(status === "PUBLISHED" ? "Post published successfully!" : "Draft saved!");
+        router.push("/dashboard/mypost");
+      } else {
+        alert(data.error || "Failed to create post");
+      }
+    } catch (error) {
+      console.error("Submit error:", error);
+      alert("Failed to create post. Please try again.");
+    } finally {
+      setSubmitting(false);
     }
   };
 
   return (
     <div className="max-w-4xl font-serif text-gray-700 mx-auto px-6 py-10">
       {/* HEADER */}
-      <div className="flex items-center justify-between mb-6 border-b pb-4">
+      <div className="flex items-center justify-between mb-8 border-b pb-4">
         <h1 className="text-3xl font-bold tracking-tight">Write a Story</h1>
 
-        <div className="flex gap-4">
+        <div className="flex gap-3">
           {/* Save as Draft */}
           <button
             type="button"
@@ -101,9 +185,10 @@ export default function CreatePostPage() {
               setStatus("DRAFT");
               submitRef.current?.click();
             }}
-            className="px-4 py-2 rounded-full border text-gray-700 hover:text-white hover:bg-pink-900 transition"
+            disabled={submitting}
+            className="px-5 py-2 rounded-full border border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-pink-900 hover:text-pink-900 transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Save as Draft
+            {submitting && status === "DRAFT" ? "Saving..." : "Save Draft"}
           </button>
 
           {/* Publish */}
@@ -113,9 +198,10 @@ export default function CreatePostPage() {
               setStatus("PUBLISHED");
               submitRef.current?.click();
             }}
-            className="px-5 py-2 rounded-full bg-black text-white hover:bg-gray-900 transition"
+            disabled={submitting}
+            className="px-6 py-2 rounded-full bg-black text-white hover:bg-gray-900 transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Publish
+            {submitting && status === "PUBLISHED" ? "Publishing..." : "Publish"}
           </button>
         </div>
       </div>
@@ -128,53 +214,129 @@ export default function CreatePostPage() {
             placeholder="Title"
             value={title}
             onChange={(e) => handleTitleChange(e.target.value)}
-            className="w-full text-4xl font-bold outline-none p-2 border-b focus:border-black transition"
+            className="w-full text-5xl font-bold outline-none p-2 border-b-2 border-transparent focus:border-gray-300 transition"
           />
         </div>
 
-        {/* COVER IMAGE */}
-        <div className="space-y-2">
-          <label className="text-gray-700 font-medium">Cover Image</label>
-          <div className="border rounded-xl p-4 hover:bg-gray-50 transition cursor-pointer">
-            <input type="file" accept="image/*" onChange={handleImageChange} />
-          </div>
-
-          {preview && (
-            <img
-              src={preview}
-              className="w-full h-72 rounded-xl object-cover shadow-sm border"
-            />
+        {/* COVER IMAGE - Medium-style upload */}
+        <div className="space-y-3">
+          {!coverImageUrl ? (
+            <div
+              onDragEnter={handleDrag}
+              onDragLeave={handleDrag}
+              onDragOver={handleDrag}
+              onDrop={handleDrop}
+              onClick={() => fileInputRef.current?.click()}
+              className={`border-2 border-dashed rounded-xl p-12 text-center cursor-pointer transition ${
+                dragActive
+                  ? "border-pink-900 bg-pink-50"
+                  : "border-gray-300 hover:border-pink-500 hover:bg-gray-50"
+              } ${uploadingImage ? "opacity-50 cursor-wait" : ""}`}
+            >
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFileInput}
+                className="hidden"
+                disabled={uploadingImage}
+              />
+              {uploadingImage ? (
+                <div className="flex flex-col items-center gap-3">
+                  <Loader2 className="w-12 h-12 text-pink-900 animate-spin" />
+                  <p className="text-gray-600">Uploading image...</p>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center gap-3">
+                  <Upload className="w-12 h-12 text-gray-400" />
+                  <div>
+                    <p className="text-gray-700 font-medium mb-1">
+                      Add a cover image
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      Drag and drop or click to upload
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="relative group">
+              <img
+                src={coverImageUrl}
+                alt="Cover"
+                className="w-full h-96 rounded-xl object-cover shadow-lg border"
+              />
+              <button
+                type="button"
+                onClick={removeCoverImage}
+                className="absolute top-4 right-4 bg-black/70 hover:bg-black text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition"
+              >
+                <X size={20} />
+              </button>
+            </div>
           )}
         </div>
 
-        {/* TAGS */}
-        <div className="space-y-2">
-          <label className="text-gray-700 font-medium">Tags</label>
-          <select
-            multiple
-            className="border rounded-lg p-3 w-full"
-            onChange={(e) =>
-              setTags(Array.from(e.target.selectedOptions, (opt) => opt.value))
-            }
-          >
-            <option value="technology">Technology</option>
-            <option value="coding">Coding</option>
-            <option value="design">Design</option>
-            <option value="lifestyle">Lifestyle</option>
-          </select>
-          <p className="text-sm text-gray-500">
-            Hold CTRL/CMD to select multiple.
+        {/* TAGS - Improved tag input */}
+        <div className="space-y-3">
+          <label className="text-gray-700 font-medium block">Tags</label>
+          <div className="flex flex-wrap gap-2 mb-2">
+            {tags.map((tag) => (
+              <span
+                key={tag}
+                className="inline-flex items-center gap-2 px-3 py-1 bg-pink-100 text-pink-900 rounded-full text-sm"
+              >
+                {tag}
+                <button
+                  type="button"
+                  onClick={() => removeTag(tag)}
+                  className="hover:text-red-600"
+                >
+                  <X size={14} />
+                </button>
+              </span>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              placeholder="Add a tag (press Enter)"
+              value={tagInput}
+              onChange={(e) => setTagInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  addTag();
+                }
+              }}
+              className="flex-1 px-4 py-2 border rounded-lg outline-none focus:border-pink-900 focus:ring-1 focus:ring-pink-900"
+            />
+            <button
+              type="button"
+              onClick={addTag}
+              className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg transition"
+            >
+              Add
+            </button>
+          </div>
+          <p className="text-xs text-gray-500">
+            Tags help readers discover your story. Press Enter or click Add.
           </p>
         </div>
 
-        {/* CONTENT */}
-        <textarea
-          placeholder="Tell your story..."
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          rows={12}
-          className="w-full border rounded-xl p-4 text-lg leading-relaxed outline-none focus:border-black"
-        />
+        {/* CONTENT - Rich Text Editor */}
+        <div className="space-y-2">
+          <label className="text-gray-700 font-medium block">Story</label>
+          <RichTextEditor
+            value={content}
+            onChange={setContent}
+            placeholder="Tell your story... Share your thoughts, ideas, and experiences. Use the toolbar above to format your text."
+          />
+          <p className="text-xs text-gray-500 text-right">
+            {content.replace(/<[^>]*>/g, "").length} characters
+          </p>
+        </div>
 
         {/* Hidden submit */}
         <button ref={submitRef} type="submit" className="hidden" />
