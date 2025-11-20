@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Heart, MessageCircle, Pencil, Eye, Calendar } from "lucide-react";
+import { Heart, MessageCircle, Calendar, Trash2, Edit, Loader2 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
 type Author = {
@@ -41,6 +41,8 @@ export default function PostsPageUI() {
   const [published, setPublished] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [deletingPostId, setDeletingPostId] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
 
   useEffect(() => {
     if (!initializing && !user) {
@@ -88,6 +90,51 @@ export default function PostsPageUI() {
   };
 
   const currentPosts = activeTab === "DRAFTS" ? drafts : published;
+
+  const handleDelete = async (postId: string, postSlug: string) => {
+    if (!token || !user) return;
+
+    setDeletingPostId(postId);
+    try {
+      const res = await fetch(`/post/${postId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (res.ok) {
+        // Remove post from state
+        if (activeTab === "DRAFTS") {
+          setDrafts((prev) => prev.filter((p) => p.id !== postId));
+        } else {
+          setPublished((prev) => prev.filter((p) => p.id !== postId));
+        }
+        alert("Post deleted successfully!");
+      } else {
+        const data = await res.json();
+        alert(data.error || "Failed to delete post");
+      }
+    } catch (err) {
+      console.error("Error deleting post:", err);
+      alert("Failed to delete post. Please try again.");
+    } finally {
+      setDeletingPostId(null);
+      setShowDeleteConfirm(null);
+    }
+  };
+
+  const handleEditClick = (e: React.MouseEvent, postSlug: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    router.push(`/dashboard/mypost/${postSlug}/edit`);
+  };
+
+  const handleDeleteClick = (e: React.MouseEvent, postId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setShowDeleteConfirm(postId);
+  };
 
   // LOADING
   if (loading) {
@@ -158,93 +205,138 @@ export default function PostsPageUI() {
       {/* POSTS GRID */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         {currentPosts.map((post) => (
-          <Link
+          <div
             key={post.id}
-            href={`/post/${post.slug || post.id}`}
-            className="group relative block bg-white rounded-2xl shadow-md hover:shadow-xl transition p-6 border border-gray-100"
+            className="group relative bg-white rounded-2xl shadow-md hover:shadow-xl transition p-6 border border-gray-100"
           >
-            {/* Cover Image */}
-            {post.coverImage && (
-              <img
-                src={post.coverImage}
-                alt="Cover"
-                className="w-full h-40 object-cover rounded-xl mb-4"
-              />
-            )}
-
-            {/* Author */}
-            <div className="flex items-center mb-4">
-              <img
-                src={
-                  post.author?.avatarUrl ||
-                  "https://res.cloudinary.com/demo/image/upload/avatar_placeholder.png"
-                }
-                className="w-12 h-12 rounded-full object-cover mr-4"
-                alt="Author"
-              />
-              <div>
-                <p className="text-sm font-medium text-black">
-                  {post.author?.name || "Unknown"}
-                </p>
-                <p className="text-xs text-gray-500 flex items-center gap-1">
-                  <Calendar size={12} />
-                  {new Date(post.updatedAt).toLocaleDateString()}
-                </p>
-              </div>
+            {/* Action Buttons - Always visible with better UI */}
+            <div className="absolute top-4 right-4 flex gap-2 z-20">
+              <button
+                onClick={(e) => handleEditClick(e, post.slug)}
+                className="bg-pink-900 text-white p-2.5 rounded-lg hover:bg-pink-800 active:scale-95 shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center group/btn"
+                title="Edit post"
+              >
+                <Edit size={18} className="group-hover/btn:scale-110 transition-transform" />
+              </button>
+              <button
+                onClick={(e) => handleDeleteClick(e, post.id)}
+                disabled={deletingPostId === post.id}
+                className="bg-red-600 text-white p-2.5 rounded-lg hover:bg-red-700 active:scale-95 shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center group/btn disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Delete post"
+              >
+                {deletingPostId === post.id ? (
+                  <Loader2 size={18} className="animate-spin" />
+                ) : (
+                  <Trash2 size={18} className="group-hover/btn:scale-110 transition-transform" />
+                )}
+              </button>
             </div>
 
-            {/* Title */}
-            <h2 className="text-xl font-bold mb-3 text-black group-hover:text-pink-900 transition">
-              {post.title}
-            </h2>
-
-            {/* Tags */}
-            <div className="flex flex-wrap gap-2 mt-2 mb-4">
-              {post.tags.map((tag) => (
-                <span
-                  key={tag.slug}
-                  className="text-xs px-3 py-1 rounded-full bg-pink-900/10 text-pink-900 font-medium"
-                >
-                  {tag.name}
-                </span>
-              ))}
-            </div>
-
-            {/* Stats */}
-            <div className="flex justify-between text-xs text-gray-600 mt-4">
-              <span className="flex items-center gap-1">
-                <Heart size={14} /> {post._count?.likes || 0}
-              </span>
-              <span className="flex items-center gap-1">
-                <MessageCircle size={14} /> {post._count?.comments || 0}
-              </span>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition">
-
-              {activeTab === "DRAFTS" ? (
-                <Link
-                  href={`/dashboard/mypost/${post.slug}`}
-                  className="bg-pink-900 text-white p-2 rounded-full hover:bg-pink-800"
-                  title="Edit post"
-                >
-                  <Pencil size={16} />
-                </Link>
-              ) : (
-                <Link
-                  href={`/dashboard/mypost/${post.slug}`}
-                  className="bg-pink-900 text-white p-2 rounded-full hover:bg-pink-800"
-                  title="View post"
-                >
-                  <Eye size={16} />
-                </Link>
+            {/* Clickable area for viewing post */}
+            <Link
+              href={`/dashboard/mypost/${post.slug}`}
+              className="block"
+            >
+              {/* Cover Image */}
+              {post.coverImage && (
+                <img
+                  src={post.coverImage}
+                  alt="Cover"
+                  className="w-full h-40 object-cover rounded-xl mb-4"
+                />
               )}
 
-            </div>
-          </Link>
+              {/* Author */}
+              <div className="flex items-center mb-4">
+                <img
+                  src={
+                    post.author?.avatarUrl ||
+                    "https://res.cloudinary.com/demo/image/upload/avatar_placeholder.png"
+                  }
+                  className="w-12 h-12 rounded-full object-cover mr-4"
+                  alt="Author"
+                />
+                <div>
+                  <p className="text-sm font-medium text-black">
+                    {post.author?.name || "Unknown"}
+                  </p>
+                  <p className="text-xs text-gray-500 flex items-center gap-1">
+                    <Calendar size={12} />
+                    {new Date(post.updatedAt).toLocaleDateString()}
+                  </p>
+                </div>
+              </div>
+
+              {/* Title */}
+              <h2 className="text-xl font-bold mb-3 text-black group-hover:text-pink-900 transition">
+                {post.title}
+              </h2>
+
+              {/* Tags */}
+              <div className="flex flex-wrap gap-2 mt-2 mb-4">
+                {post.tags.map((tag) => (
+                  <span
+                    key={tag.slug}
+                    className="text-xs px-3 py-1 rounded-full bg-pink-900/10 text-pink-900 font-medium"
+                  >
+                    {tag.name}
+                  </span>
+                ))}
+              </div>
+
+              {/* Stats */}
+              <div className="flex justify-between text-xs text-gray-600 mt-4">
+                <span className="flex items-center gap-1">
+                  <Heart size={14} /> {post._count?.likes || 0}
+                </span>
+                <span className="flex items-center gap-1">
+                  <MessageCircle size={14} /> {post._count?.comments || 0}
+                </span>
+              </div>
+            </Link>
+          </div>
         ))}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowDeleteConfirm(null)}>
+          <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-xl font-bold mb-2 text-gray-900">Delete Post?</h3>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to delete this post? This action cannot be undone.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setShowDeleteConfirm(null)}
+                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium"
+                disabled={deletingPostId !== null}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  const post = currentPosts.find((p) => p.id === showDeleteConfirm);
+                  if (post) {
+                    handleDelete(showDeleteConfirm, post.slug);
+                  }
+                }}
+                disabled={deletingPostId !== null}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+              >
+                {deletingPostId === showDeleteConfirm ? (
+                  <span className="flex items-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Deleting...
+                  </span>
+                ) : (
+                  "Delete"
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
