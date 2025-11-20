@@ -24,7 +24,7 @@ export default function MediumSidebar() {
   ];
 
   return (
-    <aside className="h-screen w-[260px] hidden font-serif md:flex flex-col bg-pink-50 border-r shadow-sm fixed left-0 top-0 p-6">
+    <aside className="h-screen w-[260px] hidden font-serif md:flex flex-col bg-white border-r shadow-sm fixed left-0 top-0 p-6">
       <h1 className="text-3xl font-semibold tracking-tight text-gray-900 mb-10">
         Echo Post
       </h1>
