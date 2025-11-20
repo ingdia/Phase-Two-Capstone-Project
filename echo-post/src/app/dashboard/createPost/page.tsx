@@ -16,7 +16,12 @@ export default function CreatePostPage() {
 
   const handleTitleChange = (value: string) => {
     setTitle(value);
-    setSlug(value.toLowerCase().replace(/ /g, "-").replace(/[^\w-]+/g, ""));
+    setSlug(
+      value
+        .toLowerCase()
+        .replace(/ /g, "-")
+        .replace(/[^\w-]+/g, "")
+    );
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -26,24 +31,60 @@ export default function CreatePostPage() {
     setPreview(URL.createObjectURL(file));
   };
 
+  const uploadToCloudinary = async (file: File): Promise<string> => {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("upload_preset", process.env.NEXT_PUBLIC_CLOUDINARY_PRESET!);
+
+    const res = await fetch(
+      `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
+      {
+        method: "POST",
+        body: formData,
+      }
+    );
+
+    const data = await res.json();
+    return data.secure_url;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const form = new FormData();
-    form.append("title", title);
-    form.append("slug", slug);
-    form.append("content", content);
-    form.append("status", status);
-    form.append("tags", JSON.stringify(tags));
-    if (coverImage) form.append("coverImage", coverImage);
+    let uploadedImageUrl = "";
 
-    const res = await fetch("/api/posts", {
+    
+    if (coverImage) {
+      uploadedImageUrl = await uploadToCloudinary(coverImage);
+    }
+
+    const body = {
+      title,
+      slug,
+      content,
+      status,
+      tags,
+      coverImage: uploadedImageUrl || null,
+    };
+
+    const token = localStorage.getItem("token");
+
+    const res = await fetch("/post", {
       method: "POST",
-      body: form,
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(body),
     });
 
-    if (res.ok) router.push("/dashboard/posts");
-    else alert("Failed to create post");
+    if (res.ok) {
+        alert("the story added")
+      router.push("/dashboard/explore");
+    } else {
+      const err = await res.json();
+      alert(err.error || "Failed to create post");
+    }
   };
 
   return (

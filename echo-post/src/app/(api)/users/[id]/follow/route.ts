@@ -1,4 +1,3 @@
-// app/api/users/[id]/follow/route.ts
 import { NextResponse } from "next/server";
 import prisma from "../../../../../lib/prisma";
 import { requireAuthenticated } from "../../../../../lib/auth";
