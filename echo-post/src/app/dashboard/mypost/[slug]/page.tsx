@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Heart, Bookmark, Share2, Clock, Loader2, Edit, Trash2, MoreVertical } from "lucide-react";
+import { Heart, Bookmark, Share2, Clock, Loader2, Edit, Trash2, MoreVertical, MessageCircle, UserPlus, UserMinus, Send } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 
@@ -48,10 +48,15 @@ export default function ReaderPage() {
   const [error, setError] = useState<string | null>(null);
   const [clapped, setClapped] = useState(false);
   const [bookmarked, setBookmarked] = useState(false);
+  const [following, setFollowing] = useState(false);
   const [progress, setProgress] = useState(0);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  const [comments, setComments] = useState<any[]>([]);
+  const [commentText, setCommentText] = useState("");
+  const [submittingComment, setSubmittingComment] = useState(false);
+  const [loadingComments, setLoadingComments] = useState(false);
   const articleRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
@@ -86,6 +91,16 @@ export default function ReaderPage() {
         const userLiked = data.likes.some((like: any) => like.userId === user.id);
         setClapped(userLiked);
       }
+
+      // Check if user is following the author (only if not the author themselves)
+      if (user && data.author && data.author.id !== user.id) {
+        checkFollowingStatus(data.author.id);
+      }
+
+      // Fetch comments
+      if (data.id) {
+        fetchCommentsForPost(data.id);
+      }
     } catch (err) {
       console.error("Error fetching post:", err);
       setError("Failed to load post");
@@ -109,6 +124,45 @@ export default function ReaderPage() {
     return () => window.removeEventListener("scroll", onScroll);
   }, [post]);
 
+  const fetchCommentsForPost = async (postId: string) => {
+    try {
+      setLoadingComments(true);
+      const res = await fetch(`/post/${postId}/comments`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setComments(data.comments || []);
+      }
+    } catch (err) {
+      console.error("Error fetching comments:", err);
+    } finally {
+      setLoadingComments(false);
+    }
+  };
+
+  const checkFollowingStatus = async (authorId: string) => {
+    if (!user || !token || user.id === authorId) {
+      setFollowing(false);
+      return;
+    }
+
+    try {
+      // Check following status via dedicated endpoint
+      const res = await fetch(`/users/${authorId}/following-status`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setFollowing(data.following || false);
+      }
+    } catch (err) {
+      console.error("Error checking follow status:", err);
+    }
+  };
+
   const handleLike = async () => {
     if (!user || !token || !post) return;
 
@@ -117,17 +171,86 @@ export default function ReaderPage() {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
         },
       });
 
       if (res.ok) {
-        setClapped(!clapped);
+        const data = await res.json();
+        setClapped(data.liked);
         // Refresh post to get updated like count
-        fetchPost();
+        const postRes = await fetch(`/post/slug/${slug}`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        if (postRes.ok) {
+          const postData = await postRes.json();
+          setPost(postData);
+        }
       }
     } catch (err) {
       console.error("Error liking post:", err);
+    }
+  };
+
+  const handleFollow = async () => {
+    if (!user || !token || !post) return;
+
+    try {
+      const res = await fetch(`/users/${post.author.id}/follow`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setFollowing(data.following);
+      } else {
+        const errorData = await res.json();
+        if (errorData.error === "Cannot follow yourself") {
+          alert("You cannot follow yourself!");
+        }
+      }
+    } catch (err) {
+      console.error("Error following user:", err);
+    }
+  };
+
+  const handleComment = async () => {
+    if (!user || !token || !post || !commentText.trim()) return;
+
+    setSubmittingComment(true);
+    try {
+      const res = await fetch(`/post/${post.id}/comments`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ content: commentText.trim() }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setComments([data.comment, ...comments]);
+        setCommentText("");
+        // Update comment count in post
+        const postRes = await fetch(`/post/slug/${slug}`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        if (postRes.ok) {
+          const postData = await postRes.json();
+          setPost(postData);
+        }
+      } else {
+        const errorData = await res.json();
+        alert(errorData.error || "Failed to post comment");
+      }
+    } catch (err) {
+      console.error("Error posting comment:", err);
+      alert("Failed to post comment. Please try again.");
+    } finally {
+      setSubmittingComment(false);
     }
   };
 
@@ -239,13 +362,13 @@ export default function ReaderPage() {
       <main className="max-w-5xl mx-auto px-6 py-10">
         {/* Cover */}
         {post.coverImage && (
-          <div className="w-full rounded-lg overflow-hidden shadow-lg mb-8">
+        <div className="w-full rounded-lg overflow-hidden shadow-lg mb-8">
             <img 
               src={post.coverImage} 
               className="w-full h-80 object-cover" 
               alt={post.title} 
             />
-          </div>
+        </div>
         )}
 
         {/* Meta & actions */}
@@ -275,9 +398,9 @@ export default function ReaderPage() {
                   className="w-12 h-12 rounded-full object-cover"
                 />
               ) : (
-                <div className="w-12 h-12 bg-pink-900 rounded-full flex items-center justify-center text-white font-semibold">
+              <div className="w-12 h-12 bg-pink-900 rounded-full flex items-center justify-center text-white font-semibold">
                   {authorInitials}
-                </div>
+              </div>
               )}
               <div>
                 <Link
@@ -329,12 +452,12 @@ export default function ReaderPage() {
               )}
 
               {user && (
-                <button
+              <button
                   onClick={handleLike}
-                  className={`px-3 py-1 rounded-md border ${clapped ? "bg-pink-900 text-white border-pink-900" : "bg-white text-black border-gray-200"} transition`}
-                >
-                  <Heart className={`inline w-4 h-4 mr-2 ${clapped ? "fill-current" : ""}`} /> {post._count.likes + (clapped ? 1 : 0)}
-                </button>
+                className={`px-3 py-1 rounded-md border ${clapped ? "bg-pink-900 text-white border-pink-900" : "bg-white text-black border-gray-200"} transition`}
+              >
+                  <Heart className={`inline w-4 h-4 mr-2 ${clapped ? "fill-current" : ""}`} /> {post._count.likes}
+              </button>
               )}
 
               <button
@@ -381,9 +504,31 @@ export default function ReaderPage() {
                 </Link>
               ))}
 
+              {/* Follow button - only show if user is not the author */}
+              {user && !isAuthor && (
               <div className="mt-4">
-                <button className="w-full py-2 rounded-full bg-pink-900 text-white hover:bg-pink-800 transition">Follow author</button>
+                  <button
+                    onClick={handleFollow}
+                    className={`w-full py-2 rounded-full transition ${
+                      following
+                        ? "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                        : "bg-pink-900 text-white hover:bg-pink-800"
+                    }`}
+                  >
+                    {following ? (
+                      <>
+                        <UserMinus className="inline w-4 h-4 mr-2" />
+                        Following
+                      </>
+                    ) : (
+                      <>
+                        <UserPlus className="inline w-4 h-4 mr-2" />
+                        Follow
+                      </>
+                    )}
+                  </button>
               </div>
+              )}
             </div>
 
             <div className="mt-6 bg-white border rounded-xl p-6 shadow-sm">
@@ -393,31 +538,113 @@ export default function ReaderPage() {
           </aside>
         </div>
 
-        {/* Comments UI (simplified) */}
+        {/* Comments Section */}
         <section className="max-w-5xl mx-auto mt-12">
-          <h3 className="text-xl font-semibold mb-4">Responses</h3>
+          <h3 className="text-xl font-semibold mb-4">
+            Responses {post._count.comments > 0 && `(${post._count.comments})`}
+          </h3>
 
-          <div className="space-y-4">
-            <div className="bg-white border rounded-xl p-4">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-full bg-pink-900 flex items-center justify-center text-white">A</div>
-                <div>
-                  <div className="flex items-center gap-3">
-                    <p className="font-medium text-black">Ana Mwiza</p>
-                    <p className="text-xs text-gray-500">Nov 20</p>
+          {/* Comment Form - only show if user is logged in */}
+          {user && (
+            <div className="bg-white border rounded-xl p-4 mb-6">
+              <div className="flex items-start gap-3 mb-3">
+                {user.avatarUrl ? (
+                  <img
+                    src={user.avatarUrl}
+                    alt={user.name || user.username || "You"}
+                    className="w-10 h-10 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-pink-900 flex items-center justify-center text-white font-semibold">
+                    {(user.name || user.username || "U").charAt(0).toUpperCase()}
                   </div>
-                  <p className="text-gray-700 mt-2">Great thoughts — really enjoyed your point about small habits.</p>
+                )}
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-black mb-1">
+                    {user.name || user.username || "You"}
+                  </p>
+                  <textarea
+                    value={commentText}
+                    onChange={(e) => setCommentText(e.target.value)}
+                    className="w-full border rounded-md p-3 resize-none focus:outline-none focus:ring-2 focus:ring-pink-900 focus:border-transparent"
+                    rows={4}
+                    placeholder="Write a response..."
+                  />
                 </div>
               </div>
-            </div>
-
-            {/* Reply form */}
-            <div className="bg-white border rounded-xl p-4">
-              <textarea className="w-full border rounded-md p-3 resize-none" rows={4} placeholder="Write a response..." />
-              <div className="flex justify-end mt-3">
-                <button className="px-4 py-2 rounded-full bg-pink-900 text-white">Respond</button>
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => setCommentText("")}
+                  className="px-4 py-2 rounded-full border border-gray-300 hover:bg-gray-50 transition"
+                  disabled={!commentText.trim() || submittingComment}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleComment}
+                  disabled={!commentText.trim() || submittingComment}
+                  className="px-4 py-2 rounded-full bg-pink-900 text-white hover:bg-pink-800 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  {submittingComment ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Posting...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4" />
+                      Respond
+                    </>
+                  )}
+                </button>
               </div>
             </div>
+          )}
+
+          {/* Comments List */}
+          <div className="space-y-4">
+            {loadingComments ? (
+              <div className="text-center py-8">
+                <Loader2 className="w-6 h-6 animate-spin text-pink-900 mx-auto" />
+              </div>
+            ) : comments.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <MessageCircle className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                <p>No responses yet. Be the first to comment!</p>
+              </div>
+            ) : (
+              comments.map((comment: any) => {
+                const commentAuthorName = comment.author.name || comment.author.username || "Anonymous";
+                const commentAuthorInitials = commentAuthorName.charAt(0).toUpperCase();
+                
+                return (
+                  <div key={comment.id} className="bg-white border rounded-xl p-4">
+                    <div className="flex items-start gap-3">
+                      {comment.author.avatarUrl ? (
+                        <img
+                          src={comment.author.avatarUrl}
+                          alt={commentAuthorName}
+                          className="w-10 h-10 rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-pink-900 flex items-center justify-center text-white font-semibold">
+                          {commentAuthorInitials}
+                        </div>
+                      )}
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-1">
+                          <p className="font-medium text-black">{commentAuthorName}</p>
+                          <p className="text-xs text-gray-500">
+                            {new Date(comment.createdAt).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <p className="text-gray-700 mt-2 whitespace-pre-wrap">{comment.content}</p>
+                      </div>
+              </div>
+            </div>
+                );
+              })
+            )}
           </div>
         </section>
       </main>
