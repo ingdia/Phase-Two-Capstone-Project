@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Heart, Bookmark, Share2, Clock, Loader2 } from "lucide-react";
+import { Heart, Bookmark, Share2, Clock, Loader2, Edit, Trash2, MoreVertical } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 
@@ -49,6 +49,9 @@ export default function ReaderPage() {
   const [clapped, setClapped] = useState(false);
   const [bookmarked, setBookmarked] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
   const articleRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
@@ -128,6 +131,36 @@ export default function ReaderPage() {
     }
   };
 
+  const handleDelete = async () => {
+    if (!user || !token || !post) return;
+
+    setDeleting(true);
+    try {
+      const res = await fetch(`/post/${post.id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (res.ok) {
+        alert("Post deleted successfully!");
+        router.push("/dashboard/mypost");
+      } else {
+        const data = await res.json();
+        alert(data.error || "Failed to delete post");
+      }
+    } catch (err) {
+      console.error("Error deleting post:", err);
+      alert("Failed to delete post. Please try again.");
+    } finally {
+      setDeleting(false);
+      setShowDeleteConfirm(false);
+    }
+  };
+
+  const isAuthor = user && post && user.id === post.author.id;
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -155,18 +188,26 @@ export default function ReaderPage() {
   const authorName = post.author.name || post.author.username || "Anonymous";
   const authorInitials = authorName.charAt(0).toUpperCase();
 
-  // Convert content to HTML for display (basic markdown-like rendering)
+  // Format content for display - handle both HTML from rich editor and plain text
   const formatContent = (content: string) => {
-    // Simple formatting - if content is already HTML, use it, otherwise format as plain text
+    if (!content) return "";
+    
+    // If content is already HTML (contains HTML tags), use it directly
     if (content.includes("<") && content.includes(">")) {
-      return content;
+      // Ensure we have proper paragraph tags for display
+      if (!content.includes("<p>") && !content.includes("<h")) {
+        // Wrap in paragraph if it's HTML but not structured
+        return `<div class="post-content">${content}</div>`;
+      }
+      return `<div class="post-content">${content}</div>`;
     }
-    // Convert newlines to <p> tags
+    
+    // Convert plain text to HTML with proper formatting
     return content
       .split("\n\n")
       .map((para) => {
         if (!para.trim()) return "";
-        // Handle headers (lines starting with #)
+        // Handle headers
         if (para.trim().startsWith("# ")) {
           return `<h1 class="text-3xl font-bold my-4">${para.trim().substring(2)}</h1>`;
         }
@@ -253,12 +294,48 @@ export default function ReaderPage() {
             </div>
 
             <div className="flex items-center gap-3">
-              <button
-                onClick={handleLike}
-                className={`px-3 py-1 rounded-md border ${clapped ? "bg-pink-900 text-white border-pink-900" : "bg-white text-black border-gray-200"} transition`}
-              >
-                <Heart className={`inline w-4 h-4 mr-2 ${clapped ? "fill-current" : ""}`} /> {post._count.likes + (clapped ? 1 : 0)}
-              </button>
+              {isAuthor && (
+                <div className="relative">
+                  <button
+                    onClick={() => setShowMenu(!showMenu)}
+                    className="p-2 rounded-md border bg-white text-black border-gray-200 hover:bg-gray-50 transition"
+                    title="More options"
+                  >
+                    <MoreVertical className="w-4 h-4" />
+                  </button>
+                  {showMenu && (
+                    <div className="absolute right-0 top-full mt-2 bg-white border rounded-lg shadow-lg z-50 min-w-[120px]">
+                      <Link
+                        href={`/dashboard/mypost/${post.slug}/edit`}
+                        className="flex items-center gap-2 px-4 py-2 hover:bg-gray-50 transition"
+                        onClick={() => setShowMenu(false)}
+                      >
+                        <Edit size={16} />
+                        Edit
+                      </Link>
+                      <button
+                        onClick={() => {
+                          setShowMenu(false);
+                          setShowDeleteConfirm(true);
+                        }}
+                        className="flex items-center gap-2 w-full px-4 py-2 hover:bg-red-50 text-red-600 transition"
+                      >
+                        <Trash2 size={16} />
+                        Delete
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {user && (
+                <button
+                  onClick={handleLike}
+                  className={`px-3 py-1 rounded-md border ${clapped ? "bg-pink-900 text-white border-pink-900" : "bg-white text-black border-gray-200"} transition`}
+                >
+                  <Heart className={`inline w-4 h-4 mr-2 ${clapped ? "fill-current" : ""}`} /> {post._count.likes + (clapped ? 1 : 0)}
+                </button>
+              )}
 
               <button
                 onClick={() => setBookmarked((s) => !s)}
@@ -279,7 +356,11 @@ export default function ReaderPage() {
           <article className="lg:col-span-2 prose prose-lg max-w-none text-gray-800" ref={articleRef}>
             {/* Rendered content */}
             <div 
-              className="prose prose-lg max-w-none"
+              className="prose prose-lg max-w-none post-content-wrapper"
+              style={{
+                lineHeight: "1.75",
+                fontSize: "1.125rem",
+              }}
               dangerouslySetInnerHTML={{ __html: formatContent(post.content) }}
             />
           </article>
@@ -307,7 +388,7 @@ export default function ReaderPage() {
 
             <div className="mt-6 bg-white border rounded-xl p-6 shadow-sm">
               <h4 className="font-semibold mb-3">Claps</h4>
-              <p className="text-sm text-gray-500">People clapped for this article {mockPost.likes} times</p>
+              <p className="text-sm text-gray-500">People clapped for this article {post._count.likes} times</p>
             </div>
           </aside>
         </div>
@@ -340,6 +421,42 @@ export default function ReaderPage() {
           </div>
         </section>
       </main>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4">
+            <h3 className="text-xl font-bold mb-2">Delete Post?</h3>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to delete this post? This action cannot be undone.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+                disabled={deleting}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {deleting ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Click outside to close menu */}
+      {showMenu && (
+        <div
+          className="fixed inset-0 z-40"
+          onClick={() => setShowMenu(false)}
+        />
+      )}
     </div>
   );
 }

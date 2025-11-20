@@ -8,16 +8,25 @@ import {
   BarChart2,
   Bookmark,
   User,
-  Settings,
+  LogOut,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { useRouter } from "next/navigation";
 
 export default function MediumSidebar() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const router = useRouter();
 
   const displayName = user?.name || user?.username || "User";
   const displayUsername = user?.username || user?.email?.split("@")[0] || "@user";
   const avatarInitials = displayName.charAt(0).toUpperCase();
+
+  const handleLogout = () => {
+    if (confirm("Are you sure you want to logout?")) {
+      logout();
+      router.push("/login");
+    }
+  };
   const menu = [
     { name: "Home", icon: Home, link: "/dashboard/overview" },
     { name: "Write a Story", icon: PenSquare, link: "/dashboard/createPost" },
@@ -26,9 +35,8 @@ export default function MediumSidebar() {
 
   ];
 
-  const settingsMenu = [
+  const accountMenu = [
     { name: "Profile", icon: User, link: "/dashboard/profile" },
-    { name: "Settings", icon: Settings, link: "dashboard/settings" },
   ];
 
   return (
@@ -62,7 +70,7 @@ export default function MediumSidebar() {
       <div className="mt-10 flex flex-col gap-3">
         <p className="text-gray-400 text-xs tracking-wide pl-2">ACCOUNT</p>
 
-        {settingsMenu.map((item, i) => (
+        {accountMenu.map((item, i) => (
           <Link href={item.link} key={i}>
             <div className="flex items-center gap-4 px-3 py-2 rounded-lg hover:bg-gray-100 hover:translate-x-1 transition-all cursor-pointer">
               <item.icon size={22} className="text-gray-700" />
@@ -70,6 +78,15 @@ export default function MediumSidebar() {
             </div>
           </Link>
         ))}
+
+        {/* Logout Button */}
+        <button
+          onClick={handleLogout}
+          className="flex items-center gap-4 px-3 py-2 rounded-lg hover:bg-red-50 hover:text-red-600 transition-all cursor-pointer text-gray-800 font-medium"
+        >
+          <LogOut size={22} className="text-gray-700" />
+          <span>Logout</span>
+        </button>
       </div>
 
     
