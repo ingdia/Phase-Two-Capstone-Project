@@ -1,40 +1,32 @@
 import { NextResponse } from "next/server";
-import bcrypt from "bcryptjs";
 import prisma from "../../../../lib/prisma";
+import bcrypt from "bcryptjs";
+import { signToken } from "../../../../lib/auth";
 
 export async function POST(req: Request) {
   try {
-    const { name, email, username, password } = await req.json();
+    const body = await req.json();
+    const { email, password, name, username, bio, avatarUrl } = body;
 
-    if (!email || !password || !username) {
-      return NextResponse.json(
-        { error: "Email, username, and password are required" },
-        { status: 400 }
-      );
+    if (!email || !password) {
+      return NextResponse.json({ error: "Email and password required" }, { status: 400 });
     }
 
-    // Check for duplicate email or username
-    const [emailExists, usernameExists] = await Promise.all([
-      prisma.user.findUnique({ where: { email } }),
-      prisma.user.findUnique({ where: { username } }),
-    ]);
+    const existing = await prisma.user.findUnique({ where: { email } });
+    if (existing) return NextResponse.json({ error: "Email already in use" }, { status: 400 });
 
-    if (emailExists) return NextResponse.json({ error: "Email already in use" }, { status: 400 });
-    if (usernameExists) return NextResponse.json({ error: "Username already taken" }, { status: 400 });
+    const hashed = await bcrypt.hash(password, 10);
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Create user
     const user = await prisma.user.create({
-      data: { name, email, username, password: hashedPassword },
-      select: { id: true, name: true, email: true, username: true },
+      data: { email, password: hashed, name, username, bio, avatarUrl },
+      select: { id: true, email: true, name: true, username: true, bio: true, avatarUrl: true, createdAt: true },
     });
 
-    
-    return NextResponse.json({ user }, { status: 201 });
-  } catch (err) {
+    const token = signToken({ id: user.id });
+
+    return NextResponse.json({ user, token }, { status: 201 });
+  } catch (err: unknown) {
     console.error(err);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return NextResponse.json({ error: "Signup failed" }, { status: 500 });
   }
 }
