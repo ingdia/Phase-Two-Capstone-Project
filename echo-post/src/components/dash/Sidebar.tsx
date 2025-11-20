@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import {
   Home,
@@ -8,8 +10,14 @@ import {
   User,
   Settings,
 } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 
 export default function MediumSidebar() {
+  const { user } = useAuth();
+
+  const displayName = user?.name || user?.username || "User";
+  const displayUsername = user?.username || user?.email?.split("@")[0] || "@user";
+  const avatarInitials = displayName.charAt(0).toUpperCase();
   const menu = [
     { name: "Home", icon: Home, link: "/dashboard/overview" },
     { name: "Write a Story", icon: PenSquare, link: "/dashboard/createPost" },
@@ -30,7 +38,7 @@ export default function MediumSidebar() {
       </h1>
 
       {/* New Story Button */}
-      <Link href="/create-post">
+      <Link href="/dashboard/createPost">
         <button className="w-full bg-black text-white py-3 rounded-full font-medium text-sm mb-8 hover:bg-gray-800 transition">
           + New Story
         </button>
@@ -66,10 +74,20 @@ export default function MediumSidebar() {
 
     
       <div className="mt-auto flex items-center gap-3 border-t pt-5">
-        <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
-        <div>
-          <p className="text-sm font-semibold text-gray-900">Diane</p>
-          <p className="text-xs text-gray-500">@writer123</p>
+        {user?.avatarUrl ? (
+          <img
+            src={user.avatarUrl}
+            alt={displayName}
+            className="w-10 h-10 rounded-full object-cover"
+          />
+        ) : (
+          <div className="w-10 h-10 bg-pink-900 text-white rounded-full flex items-center justify-center font-semibold">
+            {avatarInitials}
+          </div>
+        )}
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold text-gray-900 truncate">{displayName}</p>
+          <p className="text-xs text-gray-500 truncate">{displayUsername}</p>
         </div>
       </div>
     </aside>
