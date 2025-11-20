@@ -47,7 +47,7 @@ export default function CreatePostPage() {
   };
 
   return (
-    <div className="max-w-4xl text-gray-700 mx-auto px-6 py-10">
+    <div className="max-w-4xl font-serif text-gray-700 mx-auto px-6 py-10">
       {/* HEADER */}
       <div className="flex items-center justify-between mb-6 border-b pb-4">
         <h1 className="text-3xl font-bold tracking-tight">Write a Story</h1>
@@ -60,7 +60,7 @@ export default function CreatePostPage() {
               setStatus("DRAFT");
               submitRef.current?.click();
             }}
-            className="px-4 py-2 rounded-full border text-gray-700 hover:bg-gray-100 transition"
+            className="px-4 py-2 rounded-full border text-gray-700 hover:text-white hover:bg-pink-900 transition"
           >
             Save as Draft
           </button>
@@ -72,7 +72,7 @@ export default function CreatePostPage() {
               setStatus("PUBLISHED");
               submitRef.current?.click();
             }}
-            className="px-5 py-2 rounded-full bg-green-600 text-white hover:bg-green-700 transition"
+            className="px-5 py-2 rounded-full bg-black text-white hover:bg-gray-900 transition"
           >
             Publish
           </button>

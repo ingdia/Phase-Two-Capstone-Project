@@ -13,14 +13,14 @@ export default function MediumSidebar() {
   const menu = [
     { name: "Home", icon: Home, link: "/dashboard/overview" },
     { name: "Write a Story", icon: PenSquare, link: "/dashboard/createPost" },
-    { name: "My Drafts", icon: FileText, link: "/dashboard/drafts" },
-    { name: "Explore", icon: FileText, link: "/dashboard/published" },
+    { name: "My Post", icon: FileText, link: "/dashboard/mypost" },
+    { name: "Explore", icon: FileText, link: "/dashboard/explore" },
 
   ];
 
   const settingsMenu = [
     { name: "Profile", icon: User, link: "/dashboard/profile" },
-    { name: "Settings", icon: Settings, link: "/settings" },
+    { name: "Settings", icon: Settings, link: "dashboard/settings" },
   ];
 
   return (
@@ -64,7 +64,7 @@ export default function MediumSidebar() {
         ))}
       </div>
 
-      {/* User at bottom */}
+    
       <div className="mt-auto flex items-center gap-3 border-t pt-5">
         <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
         <div>
