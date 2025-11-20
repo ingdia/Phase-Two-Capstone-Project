@@ -1,4 +1,3 @@
-// app/(api)/(uploads)/image/route.ts
 import { NextResponse } from "next/server";
 import cloudinary from "../../../../lib/cloudinary";
 import { checkRateLimit } from "../../../../lib/rateLimiter";

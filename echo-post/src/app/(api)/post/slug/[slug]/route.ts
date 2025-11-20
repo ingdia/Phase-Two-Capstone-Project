@@ -1,11 +1,16 @@
 import { NextResponse } from "next/server";
 import prisma from "../../../../../lib/prisma";
+import { verifyTokenFromReq } from "../../../../../lib/auth";
 
 export async function GET(
   req: Request,
   { params }: { params: { slug: string } }
 ) {
   try {
+    // Try to get user ID from token (optional - for checking like status)
+    const decoded = verifyTokenFromReq(req);
+    const userId = decoded?.id;
+
     const post = await prisma.post.findUnique({
       where: { slug: params.slug },
       include: {
@@ -32,7 +37,13 @@ export async function GET(
           orderBy: { createdAt: "desc" },
         },
         tags: { include: { tag: true } },
-        likes: true,
+        likes: {
+          select: {
+            id: true,
+            userId: true,
+            createdAt: true,
+          },
+        },
         _count: {
           select: {
             comments: true,
@@ -50,11 +61,15 @@ export async function GET(
     const words = post.content.split(/\s+/).length;
     const readTime = Math.ceil(words / 200);
 
+    // Check if current user has liked this post
+    const userLiked = userId ? post.likes.some((like) => like.userId === userId) : false;
+
     return NextResponse.json({
       ...post,
       tags: post.tags.map((pt) => pt.tag),
       likeCount: post.likes.length,
       readTime: `${readTime} min read`,
+      userLiked, // Add this field for easier frontend checking
     });
   } catch (err) {
     console.error("Error fetching post:", err);

@@ -3,6 +3,7 @@ import React, { useMemo, useState, useEffect } from "react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
+import TrendingAuthors from "@/components/dash/overview/TrendingAuthors";
 
 type Tag = {
   name: string;
@@ -255,6 +256,9 @@ export default function ExplorePage() {
             ))}
           </ul>
         </div>
+
+        {/* Trending Authors */}
+        <TrendingAuthors limit={3} />
       </aside>
     </div>
   );

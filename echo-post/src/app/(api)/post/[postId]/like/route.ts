@@ -22,12 +22,12 @@ export async function POST(req: Request, { params }: { params: { postId: string 
             return NextResponse.json({ error: "Post not found" }, { status: 404 });
         }
 
-        // Check existing like
+        // Check existing like using compound unique constraint
         const existing = await prisma.like.findUnique({
             where: {
                 userId_postId: {
                     userId: decoded.id,
-                    postId
+                    postId: postId
                 }
             }
         });

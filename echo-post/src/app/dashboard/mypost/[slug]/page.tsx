@@ -86,10 +86,12 @@ export default function ReaderPage() {
       const data = await res.json();
       setPost(data);
 
-      // Check if user has liked this post
-      if (user && data.likes) {
-        const userLiked = data.likes.some((like: any) => like.userId === user.id);
-        setClapped(userLiked);
+      // Check if user has liked this post (use userLiked field from API or check likes array)
+      if (user) {
+        const userLiked = data.userLiked !== undefined 
+          ? data.userLiked 
+          : (data.likes && data.likes.some((like: any) => like.userId === user.id));
+        setClapped(userLiked || false);
       }
 
       // Check if user is following the author (only if not the author themselves)
@@ -232,7 +234,8 @@ export default function ReaderPage() {
 
       if (res.ok) {
         const data = await res.json();
-        setComments([data.comment, ...comments]);
+        // Add new comment to the beginning (most recent first)
+        setComments((prev) => [data.comment, ...prev]);
         setCommentText("");
         // Update comment count in post
         const postRes = await fetch(`/post/slug/${slug}`, {
