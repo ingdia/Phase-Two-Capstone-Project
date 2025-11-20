@@ -3,9 +3,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useAuth } from "@/context/AuthContext";
 
 function Page() {
   const router = useRouter();
+  const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -31,8 +33,7 @@ function Page() {
         return;
       }
 
-      
-      localStorage.setItem("token", data.token);
+      login(data.user, data.token);
 
       alert("Login successful!");
       router.push("/dashboard");
