@@ -68,9 +68,9 @@ export default function Profile() {
   const stats = user.stats || { published: 0, drafts: 0, followers: 0, following: 0, likes: 0 };
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen ">
       {/* Banner */}
-      <div className="h-48 w-full bg-gradient-to-r from-pink-900/20 to-pink-900/10 relative"></div>
+      <div className="h-28 w-full bg-gradient-to-r rounded-b-full from-gray-900/20 to-gray-900/10 relative"></div>
 
       {/* Profile Info */}
       <div className="max-w-3xl mx-auto px-6 -mt-16 text-center">
@@ -83,7 +83,7 @@ export default function Profile() {
               className="w-32 h-32 rounded-full border-4 border-white object-cover shadow-md mx-auto"
             />
           ) : (
-            <div className="w-32 h-32 rounded-full border-4 border-white bg-pink-900 mx-auto shadow-md flex items-center justify-center text-white text-4xl font-semibold">
+            <div className="w-32 h-32 rounded-full border-4 border-white bg-gray-900 mx-auto shadow-md flex items-center justify-center text-white text-4xl font-semibold">
               {avatarInitials}
             </div>
           )}
@@ -92,13 +92,13 @@ export default function Profile() {
         {/* Name & Bio */}
         <h1 className="text-3xl font-bold mt-4 text-black">{displayName}</h1>
         {isFirstTime ? (
-          <div className="mt-4 p-4 bg-yellow-50 border border-gray-200 rounded-lg max-w-md mx-auto">
+          <div className="mt-4 p-4 bg-gray-50 border border-gray-200 rounded-lg max-w-md mx-auto">
             <p className="text-gray-700 text-sm mb-2">
                Welcome! This is your first time. Complete your profile by adding a bio to get started.
             </p>
             <Link
               href="/dashboard/profile/edit"
-              className="text-pink-900 hover:underline font-medium text-sm"
+              className="text-gray-900 hover:underline font-medium text-sm"
             >
               Complete Profile →
             </Link>
@@ -113,11 +113,11 @@ export default function Profile() {
         {/* Stats */}
         <div className="flex justify-center mt-6 gap-10 text-black font-medium">
           <div className="text-center">
-            <p className="text-lg text-pink-900 font-semibold">{stats.drafts}</p>
+            <p className="text-lg text-gray-900 font-semibold">{stats.drafts}</p>
             <p className="text-gray-500 text-sm">Drafts</p>
           </div>
           <div className="text-center">
-            <p className="text-lg text-pink-900 font-semibold">{stats.published}</p>
+            <p className="text-lg text-gray-900 font-semibold">{stats.published}</p>
             <p className="text-gray-500 text-sm">Published</p>
           </div>
           <div className="text-center">
@@ -134,7 +134,7 @@ export default function Profile() {
         <div className="flex justify-center gap-8 mt-8 border-b border-gray-200">
           <button
             className={`pb-2 font-semibold text-lg ${
-              activeTab === "DRAFTS" ? "text-pink-900 border-b-2 border-pink-900" : "text-black/70"
+              activeTab === "DRAFTS" ? "text-gray-900 border-b-2 border-gray-900" : "text-black/70"
             }`}
             onClick={() => setActiveTab("DRAFTS")}
           >
@@ -142,7 +142,7 @@ export default function Profile() {
           </button>
           <button
             className={`pb-2 font-semibold text-lg ${
-              activeTab === "PUBLISHED" ? "text-pink-900 border-b-2 border-pink-900" : "text-black/70"
+              activeTab === "PUBLISHED" ? "text-gray-900 border-b-2 border-gray-900" : "text-black/70"
             }`}
             onClick={() => setActiveTab("PUBLISHED")}
           >
@@ -158,7 +158,7 @@ export default function Profile() {
               {activeTab === "DRAFTS" && (
                 <Link
                   href="/dashboard/createPost"
-                  className="text-pink-900 hover:underline font-medium"
+                  className="text-gray-900 hover:underline font-medium"
                 >
                   Create your first post →
                 </Link>
@@ -172,7 +172,7 @@ export default function Profile() {
                 className="group block p-6 border-b border-gray-200 hover:bg-gray-50 transition rounded-lg"
               >
                 {/* Post Title */}
-                <h2 className="text-2xl font-bold text-black group-hover:text-pink-900 transition">
+                <h2 className="text-2xl font-bold text-black group-hover:text-gray-900 transition">
                   {post.title}
                 </h2>
 
@@ -188,7 +188,7 @@ export default function Profile() {
                     {post.tags.map((tag: any, i: number) => (
                       <span
                         key={i}
-                        className="text-xs px-2 py-1 rounded-full bg-pink-900/10 text-pink-900 font-medium"
+                        className="text-xs px-2 py-1 rounded-full bg-gray-900/10 text-gray-900 font-medium"
                       >
                         {typeof tag === "string" ? tag : tag.name || tag.slug}
                       </span>
