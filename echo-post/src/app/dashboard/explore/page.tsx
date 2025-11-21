@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import TrendingAuthors from "@/components/dash/overview/TrendingAuthors";
+import { Heart, MessageCircle } from "lucide-react";
 
 type Tag = {
   name: string;
@@ -228,8 +229,12 @@ export default function ExplorePage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
-                    <span>❤️ {post._count?.likes || 0}</span>
-                    <span>💬 {post._count?.comments || 0}</span>
+                    <span className="flex items-center gap-1">
+                      <Heart size={14} /> {post._count?.likes || 0}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <MessageCircle size={14} /> {post._count?.comments || 0}
+                    </span>
                   </div>
                 </div>
               </Link>

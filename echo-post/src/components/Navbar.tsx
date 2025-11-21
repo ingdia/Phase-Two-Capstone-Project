@@ -14,7 +14,7 @@ function Navbar() {
       
       {/* Top bar */}
       <div className="bg-gray-100 flex justify-between items-center px-4 py-2 text-sm text-gray-600">
-        <div className="text-pink-600">
+        <div className="text-black-600">
           {new Date().toLocaleDateString("en-US", {
             month: "short",
             day: "numeric",
@@ -44,8 +44,8 @@ function Navbar() {
           <Link href="/" className="hover:text-black">Home</Link>
           <Link href="/community" className="hover:text-black">Community</Link>
           <Link 
-            href="/write" 
-            className="bg-pink-600 text-white px-4 py-1 rounded-full hover:bg-gray-800"
+            href="/login" 
+            className="bg-black text-white px-4 py-1 rounded-full hover:bg-gray-800"
           >
             Write
           </Link>

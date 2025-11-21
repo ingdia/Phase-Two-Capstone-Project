@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
-
+import { useState, useEffect } from "react";
+import { useAuth } from "@/context/AuthContext";
+import { useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
 
 import Banner from "@/components/dash/overview/Banner";
 import Categories from "@/components//dash/overview/Categories";
@@ -10,99 +12,164 @@ import LatestArticles from "@/components/dash/overview/LatestArticles";
 import TrendingAuthors from "@/components/dash/overview/TrendingAuthors";
 import TrendingStories from "@/components/dash/overview/TrendingStories";
 
-
 import { Post, Category, Author } from "@/types/glob";
 
 export default function HomePage() {
+  const { user, token, initializing } = useAuth();
+  const router = useRouter();
 
-
-  const categories: Category[] = [
-    { name: "Technology", color: "bg-pink-900 text-white" },
-    { name: "Design", color: "bg-gray-800 text-white" },
-    { name: "Lifestyle", color: "bg-black text-white" },
-    { name: "Coding", color: "bg-gray-200 text-black" },
-  ];
-
-  const featuredPosts: Post[] = [
-    {
-      id: "1",
-      title: "Mastering the Art of Digital Writing",
-      excerpt: "Learn how to create engaging, relevant, and impactful content.",
-      cover: "/image/image.png",
-      author: "Jane Doe",
-      readTime: "5 min read",
-      likes: 320,
-    },
-    {
-      id: "2",
-      title: "The Rise of AI in Creative Industries",
-      excerpt: "AI is changing how we create. Here's what you should know.",
-      cover: "/image/image.png",
-      author: "Alice Green",
-      readTime: "7 min read",
-      likes: 210,
-    },
-  ];
-
-  const latestPosts: Post[] = [
-    {
-      id: "3",
-      title: "The Psychology Behind Great Design",
-      excerpt: "Understanding users at a deeper level can improve UI/UX.",
-      cover: "/image/image.png",
-      author: "Mark Philips",
-      time: "2h ago",
-      likes: 12,
-    },
-    {
-      id: "4",
-      title: "Top 10 Tools Every Developer Should Know in 2025",
-      excerpt: "These tools will boost your productivity instantly.",
-      cover: "/image/image.png",
-      author: "Clara Nduwimana",
-      time: "4h ago",
-      likes: 98,
-    },
-  ];
-
-  const authors: Author[] = [
-    {
-      id: "a1",
-      name: "John Amos",
-      avatar: "/image/image.png",
-      followers: "12.4k followers",
-    },
-    {
-      id: "a2",
-      name: "Linda K.",
-      avatar: "/image/image.png",
-      followers: "9.1k followers",
-    },
-     {
-      id: "a3",
-      name: "Linda K.",
-      avatar: "/image/image.png",
-      followers: "9.1k followers",
-    },
-  ];
-
-
-
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [featuredPosts, setFeaturedPosts] = useState<Post[]>([]);
+  const [latestPosts, setLatestPosts] = useState<Post[]>([]);
+  const [loading, setLoading] = useState(true);
   const [bookmarked, setBookmarked] = useState<Record<string, boolean>>({});
   const [liked, setLiked] = useState<Record<string, boolean>>({});
   const [followed, setFollowed] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    if (!initializing && !user) {
+      router.replace("/login");
+      return;
+    }
+
+    if (user && token) {
+      fetchAllData();
+    }
+  }, [user, token, initializing, router]);
+
+  const fetchAllData = async () => {
+    if (!token) return;
+
+    try {
+      setLoading(true);
+
+      // Fetch all data in parallel
+      const [tagsRes, featuredRes, latestRes] = await Promise.all([
+        fetch("/tags", {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        }),
+        fetch("/post/featured?limit=2", {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        }),
+        fetch("/post?status=PUBLISHED&limit=4", {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        }),
+      ]);
+
+      // Process tags into categories
+      if (tagsRes.ok) {
+        const tagsData = await tagsRes.json();
+        const colors = [
+          "bg-pink-900 text-white",
+          "bg-gray-800 text-white",
+          "bg-black text-white",
+          "bg-gray-200 text-black",
+          "bg-blue-900 text-white",
+          "bg-purple-900 text-white",
+        ];
+        const categoriesData: Category[] = (tagsData.tags || []).slice(0, 6).map(
+          (tag: any, index: number) => ({
+            name: tag.name,
+            color: colors[index % colors.length],
+          })
+        );
+        setCategories(categoriesData);
+      }
+
+      // Process featured posts
+      if (featuredRes.ok) {
+        const featuredData = await featuredRes.json();
+        const formattedFeatured: Post[] = (featuredData.posts || []).map((post: any) => ({
+          id: post.id,
+          slug: post.slug,
+          title: post.title,
+          excerpt: post.content.substring(0, 150).replace(/[#*`]/g, "").trim() + "...",
+          cover: post.coverImage || "/image/image.png",
+          author: post.author.name || post.author.username || "Anonymous",
+          readTime: post.readTime || "5 min read",
+          likes: post._count?.likes || 0,
+        }));
+        setFeaturedPosts(formattedFeatured);
+      }
+
+      // Process latest posts
+      if (latestRes.ok) {
+        const latestData = await latestRes.json();
+        const formattedLatest: Post[] = (latestData.items || []).map((post: any) => {
+          const timeAgo = getTimeAgo(new Date(post.createdAt));
+          return {
+            id: post.id,
+            slug: post.slug,
+            title: post.title,
+            excerpt: post.content.substring(0, 100).replace(/[#*`]/g, "").trim() + "...",
+            cover: post.coverImage || "/image/image.png",
+            author: post.author.name || post.author.username || "Anonymous",
+            time: timeAgo,
+            likes: post._count?.likes || 0,
+          };
+        });
+        setLatestPosts(formattedLatest);
+      }
+    } catch (err) {
+      console.error("Error fetching data:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getTimeAgo = (date: Date): string => {
+    const now = new Date();
+    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+    if (diffInSeconds < 60) return `${diffInSeconds}s ago`;
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+    if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`;
+    return date.toLocaleDateString();
+  };
 
   const toggleBookmark = (id: string) => {
     setBookmarked((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
-  const toggleLike = (id: string) => {
+  const toggleLike = async (id: string) => {
+    if (!token) return;
+    
+    // Update local state immediately for better UX
     setLiked((prev) => ({ ...prev, [id]: !prev[id] }));
+
+    try {
+      const res = await fetch(`/post/${id}/like`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) {
+        // Revert on error
+        setLiked((prev) => ({ ...prev, [id]: !prev[id] }));
+      }
+    } catch (err) {
+      console.error("Error liking post:", err);
+      // Revert on error
+      setLiked((prev) => ({ ...prev, [id]: !prev[id] }));
+    }
   };
 
   const toggleFollow = (id: string) => {
     setFollowed((prev) => ({ ...prev, [id]: !prev[id] }));
   };
+
+  if (initializing || loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-pink-900" />
+      </div>
+    );
+  }
+
+  if (!user) return null;
 
 
   return (
@@ -135,16 +202,8 @@ export default function HomePage() {
 
         
         <aside className="space-y-10">
-
-        <TrendingAuthors
-            authors={authors}
-            followed={followed}
-            onFollow={toggleFollow}
-          />
+          <TrendingAuthors limit={3} />
           <TrendingStories />
-
-          
-
         </aside>
       </div>
     </div>

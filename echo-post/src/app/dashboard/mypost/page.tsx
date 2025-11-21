@@ -43,6 +43,11 @@ export default function PostsPageUI() {
   const [error, setError] = useState<string | null>(null);
   const [deletingPostId, setDeletingPostId] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
+  const [likedPosts, setLikedPosts] = useState<Record<string, boolean>>({});
+  const [likingPostId, setLikingPostId] = useState<string | null>(null);
+  const [showCommentModal, setShowCommentModal] = useState<string | null>(null);
+  const [commentText, setCommentText] = useState<Record<string, string>>({});
+  const [submittingComment, setSubmittingComment] = useState<string | null>(null);
 
   useEffect(() => {
     if (!initializing && !user) {
@@ -81,6 +86,33 @@ export default function PostsPageUI() {
 
       setDrafts(draftData.items || []);
       setPublished(pubData.items || []);
+
+      // Check which posts the user has liked
+      const allPosts = [...(draftData.items || []), ...(pubData.items || [])];
+      const likedStatus: Record<string, boolean> = {};
+      
+      // Fetch like status for each post in parallel for better performance
+      const likeStatusPromises = allPosts.map(async (post) => {
+        try {
+          const postRes = await fetch(`/post/slug/${post.slug}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (postRes.ok) {
+            const postData = await postRes.json();
+            return { postId: post.id, liked: postData.userLiked || false };
+          }
+        } catch (err) {
+          console.error(`Error checking like status for post ${post.id}:`, err);
+        }
+        return { postId: post.id, liked: false };
+      });
+      
+      const likeStatuses = await Promise.all(likeStatusPromises);
+      likeStatuses.forEach(({ postId, liked }) => {
+        likedStatus[postId] = liked;
+      });
+      
+      setLikedPosts(likedStatus);
     } catch (err) {
       console.error(err);
       setError("Failed to load posts. Please try again.");
@@ -134,6 +166,87 @@ export default function PostsPageUI() {
     e.preventDefault();
     e.stopPropagation();
     setShowDeleteConfirm(postId);
+  };
+
+  const handleLikeClick = async (e: React.MouseEvent, postId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!token || !user || likingPostId) return;
+
+    setLikingPostId(postId);
+    const wasLiked = likedPosts[postId] || false;
+    
+    // Optimistic update
+    setLikedPosts((prev) => ({ ...prev, [postId]: !wasLiked }));
+
+    try {
+      const res = await fetch(`/post/${postId}/like`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setLikedPosts((prev) => ({ ...prev, [postId]: data.liked }));
+        // Refresh posts to update like counts
+        fetchPosts();
+      } else {
+        // Revert on error
+        setLikedPosts((prev) => ({ ...prev, [postId]: wasLiked }));
+        const errorData = await res.json();
+        alert(errorData.error || "Failed to like post");
+      }
+    } catch (err) {
+      console.error("Error liking post:", err);
+      // Revert on error
+      setLikedPosts((prev) => ({ ...prev, [postId]: wasLiked }));
+      alert("Failed to like post. Please try again.");
+    } finally {
+      setLikingPostId(null);
+    }
+  };
+
+  const handleCommentClick = (e: React.MouseEvent, postId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setShowCommentModal(postId);
+    if (!commentText[postId]) {
+      setCommentText((prev) => ({ ...prev, [postId]: "" }));
+    }
+  };
+
+  const handleSubmitComment = async (postId: string) => {
+    if (!token || !user || !commentText[postId]?.trim() || submittingComment) return;
+
+    setSubmittingComment(postId);
+    try {
+      const res = await fetch(`/post/${postId}/comments`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ content: commentText[postId].trim() }),
+      });
+
+      if (res.ok) {
+        setCommentText((prev) => ({ ...prev, [postId]: "" }));
+        setShowCommentModal(null);
+        // Refresh posts to update comment counts
+        fetchPosts();
+        alert("Comment posted successfully!");
+      } else {
+        const errorData = await res.json();
+        alert(errorData.error || "Failed to post comment");
+      }
+    } catch (err) {
+      console.error("Error posting comment:", err);
+      alert("Failed to post comment. Please try again.");
+    } finally {
+      setSubmittingComment(null);
+    }
   };
 
   // LOADING
@@ -221,7 +334,7 @@ export default function PostsPageUI() {
               <button
                 onClick={(e) => handleDeleteClick(e, post.id)}
                 disabled={deletingPostId === post.id}
-                className="bg-red-600 text-white p-2.5 rounded-lg hover:bg-red-700 active:scale-95 shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center group/btn disabled:opacity-50 disabled:cursor-not-allowed"
+                className=" text-red-600 p-2.5 rounded-lg  active:scale-95 shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center group/btn disabled:opacity-50 disabled:cursor-not-allowed"
                 title="Delete post"
               >
                 {deletingPostId === post.id ? (
@@ -284,14 +397,35 @@ export default function PostsPageUI() {
                 ))}
               </div>
 
-              {/* Stats */}
-              <div className="flex justify-between text-xs text-gray-600 mt-4">
-                <span className="flex items-center gap-1">
-                  <Heart size={14} /> {post._count?.likes || 0}
-                </span>
-                <span className="flex items-center gap-1">
-                  <MessageCircle size={14} /> {post._count?.comments || 0}
-                </span>
+              {/* Stats and Actions */}
+              <div className="flex justify-between items-center text-xs text-gray-600 mt-4">
+                <div className="flex gap-4">
+                  <button
+                    onClick={(e) => handleLikeClick(e, post.id)}
+                    disabled={likingPostId === post.id}
+                    className={`flex items-center gap-1 transition-colors ${
+                      likedPosts[post.id]
+                        ? "text-pink-900 hover:text-pink-800"
+                        : "text-gray-600 hover:text-pink-900"
+                    } disabled:opacity-50`}
+                    title="Like this post"
+                  >
+                    <Heart
+                      size={14}
+                      fill={likedPosts[post.id] ? "currentColor" : "none"}
+                      className={likingPostId === post.id ? "animate-pulse" : ""}
+                    />
+                    {post._count?.likes || 0}
+                  </button>
+                  <button
+                    onClick={(e) => handleCommentClick(e, post.id)}
+                    className="flex items-center gap-1 text-gray-600 hover:text-pink-900 transition-colors"
+                    title="Comment on this post"
+                  >
+                    <MessageCircle size={14} />
+                    {post._count?.comments || 0}
+                  </button>
+                </div>
               </div>
             </Link>
           </div>
@@ -331,6 +465,50 @@ export default function PostsPageUI() {
                   </span>
                 ) : (
                   "Delete"
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Comment Modal */}
+      {showCommentModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowCommentModal(null)}>
+          <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-xl font-bold mb-4 text-gray-900">Add a Comment</h3>
+            <textarea
+              value={commentText[showCommentModal] || ""}
+              onChange={(e) =>
+                setCommentText((prev) => ({ ...prev, [showCommentModal]: e.target.value }))
+              }
+              className="w-full border rounded-lg p-3 resize-none focus:outline-none focus:ring-2 focus:ring-pink-900 focus:border-transparent mb-4"
+              rows={4}
+              placeholder="Write your comment..."
+            />
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => {
+                  setShowCommentModal(null);
+                  setCommentText((prev) => ({ ...prev, [showCommentModal]: "" }));
+                }}
+                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium"
+                disabled={submittingComment !== null}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleSubmitComment(showCommentModal)}
+                disabled={!commentText[showCommentModal]?.trim() || submittingComment !== null}
+                className="px-4 py-2 bg-pink-900 text-white rounded-lg hover:bg-pink-800 transition disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+              >
+                {submittingComment === showCommentModal ? (
+                  <span className="flex items-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Posting...
+                  </span>
+                ) : (
+                  "Post Comment"
                 )}
               </button>
             </div>
