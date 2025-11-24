@@ -3,7 +3,7 @@ import prisma from "../../../../../lib/prisma";
 import { verifyTokenFromReq } from "../../../../../lib/auth";
 import { checkRateLimit } from "../../../../../lib/rateLimiter";
 
-export async function POST(req: Request, { params }: { params: { postId: string } }) {
+export async function POST(req: Request, { params }: { params: Promise<{ slug: string }> }) {
     try {
         const ip = (req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "anon").toString();
         const rl = checkRateLimit(ip);
@@ -14,35 +14,35 @@ export async function POST(req: Request, { params }: { params: { postId: string 
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const postId = params.postId;
-
-        // Verify post exists
-        const post = await prisma.post.findUnique({ where: { id: postId } });
+        const { slug } = await params;
+        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slug);
+        
+        const post = await prisma.post.findUnique({ 
+            where: isUUID ? { id: slug } : { slug: slug } 
+        });
+        
         if (!post) {
             return NextResponse.json({ error: "Post not found" }, { status: 404 });
         }
 
-        // Check existing like using compound unique constraint
         const existing = await prisma.like.findUnique({
             where: {
                 userId_postId: {
                     userId: decoded.id,
-                    postId: postId
+                    postId: post.id
                 }
             }
         });
 
         if (existing) {
-            // Unlike - remove the like
             await prisma.like.delete({ where: { id: existing.id } });
             return NextResponse.json({ liked: false });
         }
 
-        // Like - create new like (users CAN like their own posts)
         await prisma.like.create({
             data: {
                 userId: decoded.id,
-                postId
+                postId: post.id
             }
         });
 
@@ -52,4 +52,3 @@ export async function POST(req: Request, { params }: { params: { postId: string 
         return NextResponse.json({ error: "Failed to like post" }, { status: 500 });
     }
 }
-

@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import prisma from "../../../../../lib/prisma";
 
-export async function GET(req: Request, { params }: any) {
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     const followers = await prisma.follow.findMany({
-      where: { followingId: params.id },
+      where: { followingId: id },
       include: { follower: { select: { id: true, name: true, username: true, avatarUrl: true } } },
     });
     return NextResponse.json({ followers: followers.map((f) => f.follower) });

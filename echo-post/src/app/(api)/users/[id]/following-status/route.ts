@@ -2,14 +2,18 @@ import { NextResponse } from "next/server";
 import prisma from "../../../../../lib/prisma";
 import { verifyTokenFromReq } from "../../../../../lib/auth";
 
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
         const decoded = verifyTokenFromReq(req);
         if (!decoded) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const targetId = params.id;
+        const { id } = await params;
+        if (!id) {
+            return NextResponse.json({ error: "User ID is required" }, { status: 400 });
+        }
+        const targetId = id;
 
         // Check if user is trying to check their own following status
         if (decoded.id === targetId) {

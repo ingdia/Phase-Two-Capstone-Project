@@ -372,3 +372,4 @@ Header: Authorization: Bearer {{token}}
 | `/users/[id]/follow` | POST | Yes | None |
 | `/users/[id]/following-status` | GET | Yes | None |
 
+

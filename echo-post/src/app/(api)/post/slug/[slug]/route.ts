@@ -2,17 +2,25 @@ import { NextResponse } from "next/server";
 import prisma from "../../../../../lib/prisma";
 import { verifyTokenFromReq } from "../../../../../lib/auth";
 
-export async function GET(
-  req: Request,
-  { params }: { params: { slug: string } }
-) {
+export async function GET(req: Request, { params }: { params: Promise<{ slug: string }> }) {
   try {
-    // Try to get user ID from token (optional - for checking like status)
+    const { slug } = await params;
+    console.log("Slug route called with slug:", slug);
+
+    if (!slug) {
+      console.log("No slug provided");
+      return NextResponse.json({ error: "Missing slug" }, { status: 400 });
+    }
+
+    console.log("Looking for post with slug:", slug);
+
+    // Optional: retrieve user from token
     const decoded = verifyTokenFromReq(req);
     const userId = decoded?.id;
+    console.log("User ID from token:", userId);
 
     const post = await prisma.post.findUnique({
-      where: { slug: params.slug },
+      where: { slug },
       include: {
         author: {
           select: {
@@ -54,22 +62,27 @@ export async function GET(
     });
 
     if (!post) {
+      console.log("Post not found in database for slug:", slug);
       return NextResponse.json({ error: "Post not found" }, { status: 404 });
     }
 
-    // Calculate read time (average reading speed: 200 words per minute)
-    const words = post.content.split(/\s+/).length;
+    console.log("Post found:", { id: post.id, title: post.title, slug: post.slug });
+
+    // Calculate read time (200 words/minute)
+    const words = post.content?.split(/\s+/).length ?? 0;
     const readTime = Math.ceil(words / 200);
 
-    // Check if current user has liked this post
-    const userLiked = userId ? post.likes.some((like) => like.userId === userId) : false;
+    // Has user liked?
+    const userLiked = userId
+      ? post.likes.some((like) => like.userId === userId)
+      : false;
 
     return NextResponse.json({
       ...post,
       tags: post.tags.map((pt) => pt.tag),
       likeCount: post.likes.length,
       readTime: `${readTime} min read`,
-      userLiked, // Add this field for easier frontend checking
+      userLiked,
     });
   } catch (err) {
     console.error("Error fetching post:", err);

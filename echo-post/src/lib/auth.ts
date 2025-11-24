@@ -21,7 +21,7 @@ export function verifyTokenFromReq(req: Request): JwtPayload | null {
 export function requireAuthenticated(req: Request) {
   const decoded = verifyTokenFromReq(req);
   if (!decoded) {
-    throw NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    throw new Error("Unauthorized");
   }
   return decoded;
 }

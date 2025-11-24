@@ -36,7 +36,7 @@ export default function EditPostPage() {
       setLoading(true);
       setError(null);
 
-      const res = await fetch(`/post/slug/${slug}`, {
+      const res = await fetch(`/post/${slug}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -161,7 +161,7 @@ export default function EditPostPage() {
     setTags(tags.filter((tag) => tag !== tagToRemove));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent, submitStatus?: "DRAFT" | "PUBLISHED") => {
     e.preventDefault();
 
     if (!title.trim() || !content.trim()) {
@@ -175,16 +175,7 @@ export default function EditPostPage() {
       return;
     }
 
-    // Get post ID from the post data
-    const postRes = await fetch(`/post/slug/${slug}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (!postRes.ok) {
-      alert("Failed to load post data");
-      return;
-    }
-    const postData = await postRes.json();
-
+    const finalStatus = submitStatus || status;
     setSubmitting(true);
 
     try {
@@ -192,11 +183,11 @@ export default function EditPostPage() {
         title: title.trim(),
         content: content.trim(),
         coverImage: coverImageUrl || null,
-        tagSlugs: tags,
-        status,
+        tags: tags,
+        status: finalStatus,
       };
 
-      const res = await fetch(`/post/${postData.id}`, {
+      const res = await fetch(`/post/${slug}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -208,7 +199,7 @@ export default function EditPostPage() {
       const data = await res.json();
 
       if (res.ok) {
-        alert("Post updated successfully!");
+        alert(finalStatus === "PUBLISHED" ? "Post published successfully!" : "Post updated successfully!");
         router.push(`/dashboard/mypost/${slugGenerated || slug}`);
       } else {
         alert(data.error || "Failed to update post");
@@ -255,27 +246,21 @@ export default function EditPostPage() {
           {/* Save as Draft */}
           <button
             type="button"
-            onClick={() => {
-              setStatus("DRAFT");
-              submitRef.current?.click();
-            }}
+            onClick={(e) => handleSubmit(e, "DRAFT")}
             disabled={submitting}
             className="px-5 py-2 rounded-full border border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-pink-900 hover:text-pink-900 transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {submitting && status === "DRAFT" ? "Saving..." : "Save Draft"}
+            {submitting ? "Saving..." : "Save Draft"}
           </button>
 
           {/* Update / Publish */}
           <button
             type="button"
-            onClick={() => {
-              setStatus("PUBLISHED");
-              submitRef.current?.click();
-            }}
+            onClick={(e) => handleSubmit(e, "PUBLISHED")}
             disabled={submitting}
             className="px-6 py-2 rounded-full bg-black text-white hover:bg-gray-900 transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {submitting && status === "PUBLISHED" ? "Updating..." : status === "DRAFT" ? "Publish" : "Update"}
+            {submitting ? "Publishing..." : "Publish"}
           </button>
         </div>
       </div>
@@ -400,8 +385,7 @@ export default function EditPostPage() {
           />
         </div>
 
-        {/* Hidden submit */}
-        <button ref={submitRef} type="submit" className="hidden" />
+
       </form>
     </div>
   );

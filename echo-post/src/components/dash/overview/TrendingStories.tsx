@@ -49,7 +49,7 @@ const TrendingStories: React.FC = () => {
           {posts.map((post, i) => (
             <Link
               key={post.id}
-              href={`/dashboard/mypost/${post.slug}`}
+              href={`/dashboard/post/${post.slug}`}
               className="cursor-pointer hover:translate-x-1 transition flex items-start gap-2 group"
             >
               <span className="font-bold text-white/60">{`0${i + 1}`}</span>

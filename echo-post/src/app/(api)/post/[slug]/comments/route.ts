@@ -3,10 +3,21 @@ import prisma from "../../../../../lib/prisma";
 import { verifyTokenFromReq } from "../../../../../lib/auth";
 import { checkRateLimit } from "../../../../../lib/rateLimiter";
 
-export async function GET(req: Request, { params }: { params: { postId: string } }) {
+export async function GET(req: Request, { params }: { params: Promise<{ slug: string }> }) {
     try {
+        const { slug } = await params;
+        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slug);
+        
+        const post = await prisma.post.findUnique({ 
+            where: isUUID ? { id: slug } : { slug: slug } 
+        });
+        
+        if (!post) {
+            return NextResponse.json({ error: "Post not found" }, { status: 404 });
+        }
+
         const comments = await prisma.comment.findMany({
-            where: { postId: params.postId },
+            where: { postId: post.id },
             orderBy: { createdAt: "desc" },
             include: {
                 author: {
@@ -26,7 +37,7 @@ export async function GET(req: Request, { params }: { params: { postId: string }
     }
 }
 
-export async function POST(req: Request, { params }: { params: { postId: string } }) {
+export async function POST(req: Request, { params }: { params: Promise<{ slug: string }> }) {
     try {
         const ip = (req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "anon").toString();
         const rl = checkRateLimit(ip);
@@ -43,17 +54,21 @@ export async function POST(req: Request, { params }: { params: { postId: string 
             return NextResponse.json({ error: "Comment cannot be empty" }, { status: 400 });
         }
 
-        // Verify post exists
-        const post = await prisma.post.findUnique({ where: { id: params.postId } });
+        const { slug } = await params;
+        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slug);
+        
+        const post = await prisma.post.findUnique({ 
+            where: isUUID ? { id: slug } : { slug: slug } 
+        });
+        
         if (!post) {
             return NextResponse.json({ error: "Post not found" }, { status: 404 });
         }
 
-        // Users CAN comment on their own posts
         const comment = await prisma.comment.create({
             data: {
                 content: content.trim(),
-                postId: params.postId,
+                postId: post.id,
                 authorId: decoded.id,
             },
             include: {
@@ -74,4 +89,3 @@ export async function POST(req: Request, { params }: { params: { postId: string 
         return NextResponse.json({ error: "Failed to create comment" }, { status: 500 });
     }
 }
-

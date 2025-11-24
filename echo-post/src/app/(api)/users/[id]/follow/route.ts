@@ -3,14 +3,15 @@ import prisma from "../../../../../lib/prisma";
 import { requireAuthenticated } from "../../../../../lib/auth";
 import { checkRateLimit } from "../../../../../lib/rateLimiter";
 
-export async function POST(req: Request, { params }: any) {
+export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const ip = (req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "anon").toString();
     const rl = checkRateLimit(ip);
     if (!rl.ok) return NextResponse.json({ error: "Too many requests" }, { status: 429 });
 
     const user = requireAuthenticated(req);
-    const targetId = params.id;
+    const { id } = await params;
+    const targetId = id;
     if (user.id === targetId) return NextResponse.json({ error: "Cannot follow yourself" }, { status: 400 });
 
     const existing = await prisma.follow.findUnique({

@@ -24,7 +24,7 @@ const FeaturedStories: React.FC<FeaturedStoriesProps> = ({ posts }) => {
         {posts.map((post) => (
           <Link
             key={post.id}
-            href={`/dashboard/mypost/${(post as any).slug || post.id}`}
+            href={`/dashboard/post/${(post as any).slug || post.id}`}
             className="group relative rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer transform hover:-translate-y-1"
           >
             <div className="relative h-80 overflow-hidden">

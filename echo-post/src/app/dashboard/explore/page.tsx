@@ -180,7 +180,7 @@ export default function ExplorePage() {
             return (
               <Link
                 key={post.id}
-                href={`/dashboard/mypost/${post.slug}`}
+                href={`/dashboard/post/${post.slug}`}
                 className="group flex flex-col md:flex-row gap-4 p-4 bg-white rounded-lg hover:shadow-lg transition cursor-pointer border border-gray-100"
               >
                 {post.coverImage && (

@@ -121,7 +121,7 @@ export default function CreatePostPage() {
     setTags(tags.filter((tag) => tag !== tagToRemove));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent, submitStatus?: "DRAFT" | "PUBLISHED") => {
     e.preventDefault();
 
     if (!title.trim() || !content.trim()) {
@@ -135,6 +135,7 @@ export default function CreatePostPage() {
       return;
     }
 
+    const finalStatus = submitStatus || status;
     setSubmitting(true);
 
     try {
@@ -143,7 +144,7 @@ export default function CreatePostPage() {
         content: content.trim(),
         coverImage: coverImageUrl || null,
         tagSlugs: tags,
-        status,
+        status: finalStatus,
       };
 
       const res = await fetch("/post", {
@@ -158,7 +159,7 @@ export default function CreatePostPage() {
       const data = await res.json();
 
       if (res.ok) {
-        alert(status === "PUBLISHED" ? "Post published successfully!" : "Draft saved!");
+        alert(finalStatus === "PUBLISHED" ? "Post published successfully!" : "Draft saved!");
         router.push("/dashboard/mypost");
       } else {
         alert(data.error || "Failed to create post");
@@ -181,27 +182,21 @@ export default function CreatePostPage() {
           {/* Save as Draft */}
           <button
             type="button"
-            onClick={() => {
-              setStatus("DRAFT");
-              submitRef.current?.click();
-            }}
+            onClick={(e) => handleSubmit(e, "DRAFT")}
             disabled={submitting}
             className="px-5 py-2 rounded-full border border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-pink-900 hover:text-pink-900 transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {submitting && status === "DRAFT" ? "Saving..." : "Save Draft"}
+            {submitting ? "Saving..." : "Save Draft"}
           </button>
 
           {/* Publish */}
           <button
             type="button"
-            onClick={() => {
-              setStatus("PUBLISHED");
-              submitRef.current?.click();
-            }}
+            onClick={(e) => handleSubmit(e, "PUBLISHED")}
             disabled={submitting}
             className="px-6 py-2 rounded-full bg-black text-white hover:bg-gray-900 transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {submitting && status === "PUBLISHED" ? "Publishing..." : "Publish"}
+            {submitting ? "Publishing..." : "Publish"}
           </button>
         </div>
       </div>
@@ -338,8 +333,7 @@ export default function CreatePostPage() {
           </p>
         </div>
 
-        {/* Hidden submit */}
-        <button ref={submitRef} type="submit" className="hidden" />
+
       </form>
     </div>
   );

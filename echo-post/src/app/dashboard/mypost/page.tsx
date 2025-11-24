@@ -94,7 +94,7 @@ export default function PostsPageUI() {
       // Fetch like status for each post in parallel for better performance
       const likeStatusPromises = allPosts.map(async (post) => {
         try {
-          const postRes = await fetch(`/post/slug/${post.slug}`, {
+          const postRes = await fetch(`/post/${post.slug}`, {
             headers: { Authorization: `Bearer ${token}` },
           });
           if (postRes.ok) {
@@ -128,7 +128,7 @@ export default function PostsPageUI() {
 
     setDeletingPostId(postId);
     try {
-      const res = await fetch(`/post/${postId}`, {
+      const res = await fetch(`/post/${postSlug}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
