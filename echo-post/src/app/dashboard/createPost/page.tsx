@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { Upload, X, Image as ImageIcon, Loader2 } from "lucide-react";
 import RichTextEditor from "@/components/editor/RichTextEditor";
+import { useCreatePost } from "@/hooks/usePosts";
 
 export default function CreatePostPage() {
   const router = useRouter();
@@ -21,6 +22,7 @@ export default function CreatePostPage() {
   const [coverImageUrl, setCoverImageUrl] = useState("");
   const [uploadingImage, setUploadingImage] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const createPostMutation = useCreatePost();
 
   const handleTitleChange = (value: string) => {
     setTitle(value);

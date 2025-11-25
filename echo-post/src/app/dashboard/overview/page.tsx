@@ -12,7 +12,13 @@ import LatestArticles from "@/components/dash/overview/LatestArticles";
 import TrendingAuthors from "@/components/dash/overview/TrendingAuthors";
 import TrendingStories from "@/components/dash/overview/TrendingStories";
 
-import { Post, Category, Author } from "@/types/glob";
+import { Post } from "@/types";
+import { formatExcerpt, getTimeAgo, getAuthorName } from "@/utils/formatters";
+
+type Category = {
+  name: string;
+  color: string;
+};
 
 export default function HomePage() {
   const { user, token, initializing } = useAuth();
@@ -79,13 +85,13 @@ export default function HomePage() {
       // Process featured posts
       if (featuredRes.ok) {
         const featuredData = await featuredRes.json();
-        const formattedFeatured: Post[] = (featuredData.posts || []).map((post: any) => ({
+        const formattedFeatured: any[] = (featuredData.posts || []).map((post: any) => ({
           id: post.id,
           slug: post.slug,
           title: post.title,
-          excerpt: post.content.substring(0, 150).replace(/[#*`]/g, "").trim() + "...",
+          excerpt: formatExcerpt(post.content),
           cover: post.coverImage || "/image/image.png",
-          author: post.author.name || post.author.username || "Anonymous",
+          author: getAuthorName(post.author),
           readTime: post.readTime || "5 min read",
           likes: post._count?.likes || 0,
         }));
@@ -95,19 +101,16 @@ export default function HomePage() {
       // Process latest posts
       if (latestRes.ok) {
         const latestData = await latestRes.json();
-        const formattedLatest: Post[] = (latestData.items || []).map((post: any) => {
-          const timeAgo = getTimeAgo(new Date(post.createdAt));
-          return {
-            id: post.id,
-            slug: post.slug,
-            title: post.title,
-            excerpt: post.content.substring(0, 100).replace(/[#*`]/g, "").trim() + "...",
-            cover: post.coverImage || "/image/image.png",
-            author: post.author.name || post.author.username || "Anonymous",
-            time: timeAgo,
-            likes: post._count?.likes || 0,
-          };
-        });
+        const formattedLatest: any[] = (latestData.items || []).map((post: any) => ({
+          id: post.id,
+          slug: post.slug,
+          title: post.title,
+          excerpt: formatExcerpt(post.content, 100),
+          cover: post.coverImage || "/image/image.png",
+          author: getAuthorName(post.author),
+          time: getTimeAgo(new Date(post.createdAt)),
+          likes: post._count?.likes || 0,
+        }));
         setLatestPosts(formattedLatest);
       }
     } catch (err) {
@@ -117,16 +120,7 @@ export default function HomePage() {
     }
   };
 
-  const getTimeAgo = (date: Date): string => {
-    const now = new Date();
-    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
 
-    if (diffInSeconds < 60) return `${diffInSeconds}s ago`;
-    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
-    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
-    if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`;
-    return date.toLocaleDateString();
-  };
 
   const toggleBookmark = (id: string) => {
     setBookmarked((prev) => ({ ...prev, [id]: !prev[id] }));

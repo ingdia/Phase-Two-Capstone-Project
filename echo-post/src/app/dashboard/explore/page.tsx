@@ -1,41 +1,14 @@
 "use client";
-import React, { useMemo, useState, useEffect } from "react";
-import Link from "next/link";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import TrendingAuthors from "@/components/dash/overview/TrendingAuthors";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import ErrorMessage from "@/components/ui/ErrorMessage";
+import SearchBar from "@/components/ui/SearchBar";
+import TagFilter from "@/components/ui/TagFilter";
+import PostList from "@/components/posts/PostList";
 import { usePosts } from "@/hooks/usePosts";
-import { Heart, MessageCircle } from "lucide-react";
-
-type Tag = {
-  name: string;
-  slug: string;
-};
-
-type Author = {
-  id: string;
-  name: string | null;
-  username: string | null;
-  avatarUrl?: string | null;
-};
-
-type Post = {
-  id: string;
-  slug: string;
-  title: string;
-  content: string;
-  coverImage?: string | null;
-  createdAt: string;
-  updatedAt: string;
-  author: Author;
-  tags: Tag[];
-  _count?: {
-    comments: number;
-    likes: number;
-  };
-};
 
 const TRENDING_TOPICS = ["react", "nextjs", "design", "travel", "health", "coding", "technology", "lifestyle"];
 
@@ -52,63 +25,9 @@ export default function ExplorePage() {
       router.replace("/login");
       return;
     }
+  }, [user, initializing, router]);
 
-    if (user) {
-      fetchAllPosts();
-    }
-  }, [user, initializing, router, selectedTag]);
-
-  const fetchAllPosts = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      // Build query params - only fetch PUBLISHED posts from all users
-      const params = new URLSearchParams({
-        status: "PUBLISHED",
-        limit: "20",
-      });
-
-      if (selectedTag) {
-        params.append("tag", selectedTag);
-      }
-
-      if (query.trim()) {
-        params.append("q", query.trim());
-      }
-
-      const res = await fetch(`/post?${params.toString()}`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-
-      if (!res.ok) {
-        throw new Error("Failed to fetch posts");
-      }
-
-      const data = await res.json();
-      setPosts(data.items || []);
-    } catch (err) {
-      console.error(err);
-      setError("Failed to load posts. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Debounce search
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (user) {
-        fetchAllPosts();
-      }
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, [query]);
-
-  const filtered = useMemo(() => {
-    return posts;
-  }, [posts]);
+  const filtered = posts;
 
   if (isLoading) {
     return (
@@ -136,127 +55,28 @@ export default function ExplorePage() {
   return (
     <div className="min-h-screen flex flex-col lg:flex-row font-sans text-gray-800">
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-4 sm:px-6 py-4 flex-shrink-0 gap-4">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Explore</h1>
-          <input
+          <SearchBar
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={setQuery}
             placeholder="Search stories, authors, tags..."
-            className="w-full sm:w-80 px-4 py-2 border border-gray-300 rounded-full outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900 text-gray-900 bg-white"
           />
         </div>
 
-        {/* Trending Topics / Tags */}
-        <div className="px-4 sm:px-6 py-3 flex gap-3 overflow-x-auto no-scrollbar flex-shrink-0 bg-white border-b border-gray-200">
-          <button
-            onClick={() => setSelectedTag(null)}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition ${
-              !selectedTag
-                ? "bg-gray-900 text-white shadow"
-                : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 hover:text-gray-900"
-            }`}
-          >
-            All
-          </button>
-          {TRENDING_TOPICS.map((tag) => (
-            <button
-              key={tag}
-              onClick={() => setSelectedTag(tag)}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition ${
-                selectedTag === tag
-                  ? "bg-gray-900 text-white shadow"
-                  : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 hover:text-gray-900"
-              }`}
-            >
-              #{tag}
-            </button>
-          ))}
-        </div>
+        <TagFilter
+          tags={TRENDING_TOPICS}
+          selectedTag={selectedTag}
+          onTagSelect={setSelectedTag}
+        />
 
-        {/* Scrollable Feed */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 flex flex-col gap-4 sm:gap-6">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6">
           {error && (
             <div className="text-center py-8 text-red-600">
               {error}
             </div>
           )}
-
-          {!error && filtered.length === 0 && (
-            <div className="text-center py-12 text-gray-500">
-              <p className="text-lg mb-2">No posts found.</p>
-              <p className="text-sm">Try searching for something else or check back later.</p>
-            </div>
-          )}
-
-          {filtered.map((post) => {
-            const excerpt = post.content.substring(0, 150).replace(/[#*`]/g, "").trim() + "...";
-            const readTime = Math.ceil(post.content.length / 1000);
-            const authorName = post.author.name || post.author.username || "Anonymous";
-
-            return (
-              <Link
-                key={post.id}
-                href={`/dashboard/post/${post.slug}`}
-                className="group flex flex-col md:flex-row gap-4 p-4 bg-white rounded-lg hover:shadow-lg transition cursor-pointer border border-gray-100"
-              >
-                {post.coverImage && (
-                  <div className="w-full md:w-48 h-32 flex-shrink-0 overflow-hidden rounded-lg bg-gray-100">
-                    <img
-                      src={post.coverImage}
-                      alt={post.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
-                    />
-                  </div>
-                )}
-
-                <div className="flex flex-col justify-between flex-1">
-                  <div>
-                    <div className="flex items-center gap-2 text-xs text-gray-500 mb-1">
-                      {post.author.avatarUrl ? (
-                        <img
-                          src={post.author.avatarUrl}
-                          alt={authorName}
-                          className="w-5 h-5 rounded-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-5 h-5 rounded-full bg-gray-900 flex items-center justify-center text-white text-xs">
-                          {authorName.charAt(0).toUpperCase()}
-                        </div>
-                      )}
-                      <span>{authorName}</span>
-                      <span>•</span>
-                      <span>{readTime} min read</span>
-                      <span>•</span>
-                      <span>{new Date(post.createdAt).toLocaleDateString()}</span>
-                    </div>
-                    <h3 className="text-lg font-semibold text-gray-900 group-hover:text-gray-700 transition mb-2">
-                      {post.title}
-                    </h3>
-                    <p className="text-sm text-gray-600 line-clamp-2 mb-2">{excerpt}</p>
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {post.tags.map((tag) => (
-                        <span
-                          key={tag.slug}
-                          className="text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded-full"
-                        >
-                          {tag.name}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
-                    <span className="flex items-center gap-1">
-                      <Heart size={14} /> {post._count?.likes || 0}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <MessageCircle size={14} /> {post._count?.comments || 0}
-                    </span>
-                  </div>
-                </div>
-              </Link>
-            );
-          })}
+          {!error && <PostList posts={filtered} />}
         </div>
       </div>
 
