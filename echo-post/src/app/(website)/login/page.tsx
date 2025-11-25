@@ -45,9 +45,9 @@ function Page() {
   }
 
   return (
-    <div className='bg-pink-100 min-h-screen pt-10'>
+    <div className='bg-gray-100 min-h-screen pt-10'>
       <div className='text-gray-300 font-serif p-2 flex items-center justify-center'>
-        <div className='shadow-lg shadow-gray-700 py-20 bg-pink-900/90 p-14 flex flex-col md:flex-row gap-4 rounded-md'>
+        <div className='shadow-lg shadow-gray-700 py-20 bg-black p-14 flex flex-col md:flex-row gap-4 rounded-md'>
 
           {/* LEFT SIDE TEXT */}
           <div className='flex flex-col text-gray-300 justify-center items-center md:items-start text-center md:text-left gap-4 p-4'>

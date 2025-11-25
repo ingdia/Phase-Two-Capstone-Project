@@ -17,7 +17,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
         }
 
         const comments = await prisma.comment.findMany({
-            where: { postId: post.id },
+            where: { postId: post.id, parentId: null },
             orderBy: { createdAt: "desc" },
             include: {
                 author: {
@@ -27,6 +27,19 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
                         avatarUrl: true,
                         username: true
                     }
+                },
+                replies: {
+                    include: {
+                        author: {
+                            select: {
+                                id: true,
+                                name: true,
+                                avatarUrl: true,
+                                username: true
+                            }
+                        }
+                    },
+                    orderBy: { createdAt: "asc" }
                 }
             },
         });
@@ -48,7 +61,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const { content } = await req.json();
+        const { content, parentId } = await req.json();
 
         if (!content || content.trim().length === 0) {
             return NextResponse.json({ error: "Comment cannot be empty" }, { status: 400 });
@@ -70,6 +83,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
                 content: content.trim(),
                 postId: post.id,
                 authorId: decoded.id,
+                parentId: parentId || null,
             },
             include: {
                 author: {

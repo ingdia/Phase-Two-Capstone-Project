@@ -73,7 +73,7 @@ export default function Profile() {
       <div className="h-28 w-full bg-gradient-to-r rounded-b-full from-gray-900/20 to-gray-900/10 relative"></div>
 
       {/* Profile Info */}
-      <div className="max-w-3xl mx-auto px-6 -mt-16 text-center">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 -mt-16 text-center">
         {/* Avatar */}
         <div className="relative inline-block">
           {user.avatarUrl ? (
@@ -90,7 +90,7 @@ export default function Profile() {
         </div>
 
         {/* Name & Bio */}
-        <h1 className="text-3xl font-bold mt-4 text-black">{displayName}</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold mt-4 text-gray-900">{displayName}</h1>
         {isFirstTime ? (
           <div className="mt-4 p-4 bg-gray-50 border border-gray-200 rounded-lg max-w-md mx-auto">
             <p className="text-gray-700 text-sm mb-2">
@@ -111,7 +111,7 @@ export default function Profile() {
         )}
 
         {/* Stats */}
-        <div className="flex justify-center mt-6 gap-10 text-black font-medium">
+        <div className="flex justify-center mt-6 gap-6 sm:gap-10 text-gray-900 font-medium">
           <div className="text-center">
             <p className="text-lg text-gray-900 font-semibold">{stats.drafts}</p>
             <p className="text-gray-500 text-sm">Drafts</p>
@@ -121,28 +121,28 @@ export default function Profile() {
             <p className="text-gray-500 text-sm">Published</p>
           </div>
           <div className="text-center">
-            <p className="text-lg text-black font-semibold">{stats.followers}</p>
+            <p className="text-lg text-gray-900 font-semibold">{stats.followers}</p>
             <p className="text-gray-500 text-sm">Followers</p>
           </div>
           <div className="text-center">
-            <p className="text-lg text-black font-semibold">{stats.likes}</p>
+            <p className="text-lg text-gray-900 font-semibold">{stats.likes}</p>
             <p className="text-gray-500 text-sm">Likes</p>
           </div>
         </div>
 
         {/* Tabs */}
-        <div className="flex justify-center gap-8 mt-8 border-b border-gray-200">
+        <div className="flex justify-center gap-6 sm:gap-8 mt-8 border-b border-gray-200">
           <button
-            className={`pb-2 font-semibold text-lg ${
-              activeTab === "DRAFTS" ? "text-gray-900 border-b-2 border-gray-900" : "text-black/70"
+            className={`pb-2 font-semibold text-base sm:text-lg ${
+              activeTab === "DRAFTS" ? "text-gray-900 border-b-2 border-gray-900" : "text-gray-600"
             }`}
             onClick={() => setActiveTab("DRAFTS")}
           >
             Drafts
           </button>
           <button
-            className={`pb-2 font-semibold text-lg ${
-              activeTab === "PUBLISHED" ? "text-gray-900 border-b-2 border-gray-900" : "text-black/70"
+            className={`pb-2 font-semibold text-base sm:text-lg ${
+              activeTab === "PUBLISHED" ? "text-gray-900 border-b-2 border-gray-900" : "text-gray-600"
             }`}
             onClick={() => setActiveTab("PUBLISHED")}
           >
@@ -172,7 +172,7 @@ export default function Profile() {
                 className="group block p-6 border-b border-gray-200 hover:bg-gray-50 transition rounded-lg"
               >
                 {/* Post Title */}
-                <h2 className="text-2xl font-bold text-black group-hover:text-gray-900 transition">
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-900 group-hover:text-pink-900 transition">
                   {post.title}
                 </h2>
 

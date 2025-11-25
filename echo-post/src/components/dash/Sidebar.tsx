@@ -40,14 +40,14 @@ export default function MediumSidebar() {
   ];
 
   return (
-    <aside className="h-screen w-[260px] hidden font-serif md:flex flex-col bg-white border-r shadow-sm fixed left-0 top-0 p-6">
-      <h1 className="text-3xl font-semibold tracking-tight text-gray-900 mb-10">
+    <aside className="h-screen w-[260px] hidden font-serif md:flex flex-col bg-white border-r shadow-sm fixed left-0 top-0 p-4 lg:p-6 z-40">
+      <h1 className="text-2xl lg:text-3xl font-semibold tracking-tight text-gray-900 mb-6 lg:mb-10">
         Echo Post
       </h1>
 
       {/* New Story Button */}
       <Link href="/dashboard/createPost">
-        <button className="w-full bg-black text-white py-3 rounded-full font-medium text-sm mb-8 hover:bg-gray-800 transition">
+        <button className="w-full bg-black text-white py-2.5 lg:py-3 rounded-full font-medium text-sm mb-6 lg:mb-8 hover:bg-gray-800 transition">
           + New Story
         </button>
       </Link>
@@ -98,7 +98,7 @@ export default function MediumSidebar() {
             className="w-10 h-10 rounded-full object-cover"
           />
         ) : (
-          <div className="w-10 h-10 bg-pink-900 text-white rounded-full flex items-center justify-center font-semibold">
+          <div className="w-10 h-10 bg-gray-900 text-white rounded-full flex items-center justify-center font-semibold">
             {avatarInitials}
           </div>
         )}

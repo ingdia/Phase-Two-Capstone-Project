@@ -5,6 +5,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Heart, MessageCircle, Calendar, Trash2, Edit, Loader2 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { usePosts } from "@/hooks/usePosts";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import ErrorMessage from "@/components/ui/ErrorMessage";
 
 type Author = {
   id: string;
@@ -37,10 +40,13 @@ export default function PostsPageUI() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<"DRAFTS" | "PUBLISHED">("DRAFTS");
 
-  const [drafts, setDrafts] = useState<Post[]>([]);
-  const [published, setPublished] = useState<Post[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { data: draftsData, isLoading: draftsLoading, error: draftsError, refetch: refetchDrafts } = usePosts('DRAFT', user?.id);
+  const { data: publishedData, isLoading: publishedLoading, error: publishedError, refetch: refetchPublished } = usePosts('PUBLISHED', user?.id);
+  
+  const drafts = draftsData?.items || [];
+  const published = publishedData?.items || [];
+  const loading = draftsLoading || publishedLoading;
+  const error = draftsError || publishedError;
   const [deletingPostId, setDeletingPostId] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
   const [likedPosts, setLikedPosts] = useState<Record<string, boolean>>({});
@@ -252,17 +258,22 @@ export default function PostsPageUI() {
   // LOADING
   if (loading) {
     return (
-      <div className="text-center min-h-screen py-20 text-gray-500 text-lg animate-pulse">
-        Loading posts...
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-12 min-h-screen">
+        <LoadingSpinner size="lg" text="Loading your posts..." />
       </div>
     );
   }
 
-
   if (error) {
     return (
-      <div className="text-center py-20 text-red-600 text-lg">
-        {error}
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-12 min-h-screen">
+        <ErrorMessage 
+          message="Failed to load your posts. Please try again." 
+          onRetry={() => {
+            refetchDrafts();
+            refetchPublished();
+          }}
+        />
       </div>
     );
   }
@@ -285,8 +296,8 @@ export default function PostsPageUI() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-6 py-12 min-h-screen">
-      <h1 className="text-4xl font-bold mb-8 text-pink-900">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-12 min-h-screen">
+      <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-6 sm:mb-8 text-gray-900">
         My Posts
       </h1>
 
@@ -295,8 +306,8 @@ export default function PostsPageUI() {
         <button
           className={`mr-6 pb-2 font-semibold text-lg ${
             activeTab === "DRAFTS"
-              ? "text-pink-900 border-b-4 border-pink-900"
-              : "text-black/70"
+              ? "text-gray-900 border-b-4 border-gray-900"
+              : "text-gray-600"
           }`}
           onClick={() => setActiveTab("DRAFTS")}
         >
@@ -306,8 +317,8 @@ export default function PostsPageUI() {
         <button
           className={`pb-2 font-semibold text-lg ${
             activeTab === "PUBLISHED"
-              ? "text-pink-900 border-b-4 border-pink-900"
-              : "text-black/70"
+              ? "text-gray-900 border-b-4 border-gray-900"
+              : "text-gray-600"
           }`}
           onClick={() => setActiveTab("PUBLISHED")}
         >
@@ -316,17 +327,17 @@ export default function PostsPageUI() {
       </div>
 
       {/* POSTS GRID */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
         {currentPosts.map((post) => (
           <div
             key={post.id}
-            className="group relative bg-white rounded-2xl shadow-md hover:shadow-xl transition p-6 border border-gray-100"
+            className="group relative bg-white rounded-2xl shadow-md hover:shadow-xl transition p-4 sm:p-6 border border-gray-100"
           >
             {/* Action Buttons - Always visible with better UI */}
             <div className="absolute top-4 right-4 flex gap-2 z-20">
               <button
                 onClick={(e) => handleEditClick(e, post.slug)}
-                className="bg-pink-900 text-white p-2.5 rounded-lg hover:bg-pink-800 active:scale-95 shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center group/btn"
+                className="bg-gray-900 text-white p-2.5 rounded-lg hover:bg-gray-800 active:scale-95 shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center group/btn"
                 title="Edit post"
               >
                 <Edit size={18} className="group-hover/btn:scale-110 transition-transform" />
@@ -370,7 +381,7 @@ export default function PostsPageUI() {
                   alt="Author"
                 />
                 <div>
-                  <p className="text-sm font-medium text-black">
+                  <p className="text-sm font-medium text-gray-900">
                     {post.author?.name || "Unknown"}
                   </p>
                   <p className="text-xs text-gray-500 flex items-center gap-1">
@@ -381,7 +392,7 @@ export default function PostsPageUI() {
               </div>
 
               {/* Title */}
-              <h2 className="text-xl font-bold mb-3 text-black group-hover:text-pink-900 transition">
+              <h2 className="text-lg sm:text-xl font-bold mb-3 text-gray-900 group-hover:text-gray-700 transition">
                 {post.title}
               </h2>
 
@@ -390,7 +401,7 @@ export default function PostsPageUI() {
                 {post.tags.map((tag) => (
                   <span
                     key={tag.slug}
-                    className="text-xs px-3 py-1 rounded-full bg-pink-900/10 text-pink-900 font-medium"
+                    className="text-xs px-3 py-1 rounded-full bg-gray-100 text-gray-700 font-medium"
                   >
                     {tag.name}
                   </span>
@@ -405,8 +416,8 @@ export default function PostsPageUI() {
                     disabled={likingPostId === post.id}
                     className={`flex items-center gap-1 transition-colors ${
                       likedPosts[post.id]
-                        ? "text-pink-900 hover:text-pink-800"
-                        : "text-gray-600 hover:text-pink-900"
+                        ? "text-gray-900 hover:text-gray-700"
+                        : "text-gray-600 hover:text-gray-900"
                     } disabled:opacity-50`}
                     title="Like this post"
                   >
@@ -419,7 +430,7 @@ export default function PostsPageUI() {
                   </button>
                   <button
                     onClick={(e) => handleCommentClick(e, post.id)}
-                    className="flex items-center gap-1 text-gray-600 hover:text-pink-900 transition-colors"
+                    className="flex items-center gap-1 text-gray-600 hover:text-gray-900 transition-colors"
                     title="Comment on this post"
                   >
                     <MessageCircle size={14} />
@@ -482,7 +493,7 @@ export default function PostsPageUI() {
               onChange={(e) =>
                 setCommentText((prev) => ({ ...prev, [showCommentModal]: e.target.value }))
               }
-              className="w-full border rounded-lg p-3 resize-none focus:outline-none focus:ring-2 focus:ring-pink-900 focus:border-transparent mb-4"
+              className="w-full border rounded-lg p-3 resize-none focus:outline-none focus:ring-2 focus:ring-pink-900 focus:border-transparent mb-4 text-gray-900 bg-white placeholder-gray-500"
               rows={4}
               placeholder="Write your comment..."
             />
@@ -500,7 +511,7 @@ export default function PostsPageUI() {
               <button
                 onClick={() => handleSubmitComment(showCommentModal)}
                 disabled={!commentText[showCommentModal]?.trim() || submittingComment !== null}
-                className="px-4 py-2 bg-pink-900 text-white rounded-lg hover:bg-pink-800 transition disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition disabled:opacity-50 disabled:cursor-not-allowed font-medium"
               >
                 {submittingComment === showCommentModal ? (
                   <span className="flex items-center gap-2">

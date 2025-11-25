@@ -62,7 +62,7 @@ export default function RichTextEditor({ value, onChange, placeholder = "Tell yo
   );
 
   return (
-    <div className="border rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-pink-900 focus-within:border-pink-900 transition">
+    <div className="border border-gray-300 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-gray-900 focus-within:border-gray-900 transition">
       {/* Toolbar */}
       <div className="border-b p-2 flex gap-1 flex-wrap bg-gray-50">
         <ToolbarButton
@@ -105,7 +105,7 @@ export default function RichTextEditor({ value, onChange, placeholder = "Tell yo
         onKeyDown={handleKeyDown}
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}
-        className="min-h-[400px] p-6 text-lg leading-relaxed outline-none prose prose-lg max-w-none focus:outline-none"
+        className="min-h-[400px] p-4 sm:p-6 text-base sm:text-lg leading-relaxed outline-none prose prose-lg max-w-none focus:outline-none text-gray-900 bg-white"
         style={{
           whiteSpace: "pre-wrap",
           wordWrap: "break-word",

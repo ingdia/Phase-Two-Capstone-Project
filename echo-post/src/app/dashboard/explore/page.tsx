@@ -4,6 +4,9 @@ import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import TrendingAuthors from "@/components/dash/overview/TrendingAuthors";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import ErrorMessage from "@/components/ui/ErrorMessage";
+import { usePosts } from "@/hooks/usePosts";
 import { Heart, MessageCircle } from "lucide-react";
 
 type Tag = {
@@ -41,9 +44,8 @@ export default function ExplorePage() {
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { data: postsData, isLoading, error, refetch } = usePosts('PUBLISHED');
+  const posts = postsData?.items || [];
 
   useEffect(() => {
     if (!initializing && !user) {
@@ -108,36 +110,51 @@ export default function ExplorePage() {
     return posts;
   }, [posts]);
 
-  if (loading && posts.length === 0) {
+  if (isLoading) {
     return (
-      <div className="h-screen flex items-center justify-center">
-        <p className="text-gray-500">Loading posts...</p>
+      <div className="min-h-screen flex flex-col lg:flex-row font-sans text-gray-800">
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <LoadingSpinner size="lg" text="Loading posts..." />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex flex-col lg:flex-row font-sans text-gray-800">
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <ErrorMessage 
+            message="Failed to load posts. Please try again." 
+            onRetry={() => refetch()}
+          />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="h-screen flex font-sans text-gray-800">
-      <div className="flex-1 flex flex-col border-r overflow-hidden">
+    <div className="min-h-screen flex flex-col lg:flex-row font-sans text-gray-800">
+      <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 flex-shrink-0">
-          <h1 className="text-3xl font-bold text-pink-900">Explore</h1>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-4 sm:px-6 py-4 flex-shrink-0 gap-4">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Explore</h1>
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search stories, authors, tags..."
-            className="w-80 px-4 py-2 border rounded-full outline-none focus:border-pink-900 focus:ring-1 focus:ring-pink-900"
+            className="w-full sm:w-80 px-4 py-2 border border-gray-300 rounded-full outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900 text-gray-900 bg-white"
           />
         </div>
 
         {/* Trending Topics / Tags */}
-        <div className="px-6 py-3 flex gap-3 overflow-x-auto no-scrollbar flex-shrink-0 bg-white border-b border-gray-200">
+        <div className="px-4 sm:px-6 py-3 flex gap-3 overflow-x-auto no-scrollbar flex-shrink-0 bg-white border-b border-gray-200">
           <button
             onClick={() => setSelectedTag(null)}
             className={`px-4 py-2 rounded-full text-sm font-medium transition ${
               !selectedTag
-                ? "bg-pink-900 text-white shadow"
-                : "bg-white border border-gray-300 text-gray-700 hover:bg-pink-50 hover:text-pink-900"
+                ? "bg-gray-900 text-white shadow"
+                : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 hover:text-gray-900"
             }`}
           >
             All
@@ -148,8 +165,8 @@ export default function ExplorePage() {
               onClick={() => setSelectedTag(tag)}
               className={`px-4 py-2 rounded-full text-sm font-medium transition ${
                 selectedTag === tag
-                  ? "bg-pink-900 text-white shadow"
-                  : "bg-white border border-gray-300 text-gray-700 hover:bg-pink-50 hover:text-pink-900"
+                  ? "bg-gray-900 text-white shadow"
+                  : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 hover:text-gray-900"
               }`}
             >
               #{tag}
@@ -158,7 +175,7 @@ export default function ExplorePage() {
         </div>
 
         {/* Scrollable Feed */}
-        <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-6">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 flex flex-col gap-4 sm:gap-6">
           {error && (
             <div className="text-center py-8 text-red-600">
               {error}
@@ -203,7 +220,7 @@ export default function ExplorePage() {
                           className="w-5 h-5 rounded-full object-cover"
                         />
                       ) : (
-                        <div className="w-5 h-5 rounded-full bg-pink-900 flex items-center justify-center text-white text-xs">
+                        <div className="w-5 h-5 rounded-full bg-gray-900 flex items-center justify-center text-white text-xs">
                           {authorName.charAt(0).toUpperCase()}
                         </div>
                       )}
@@ -213,7 +230,7 @@ export default function ExplorePage() {
                       <span>•</span>
                       <span>{new Date(post.createdAt).toLocaleDateString()}</span>
                     </div>
-                    <h3 className="text-lg font-semibold text-gray-900 group-hover:text-pink-900 transition mb-2">
+                    <h3 className="text-lg font-semibold text-gray-900 group-hover:text-gray-700 transition mb-2">
                       {post.title}
                     </h3>
                     <p className="text-sm text-gray-600 line-clamp-2 mb-2">{excerpt}</p>
@@ -221,7 +238,7 @@ export default function ExplorePage() {
                       {post.tags.map((tag) => (
                         <span
                           key={tag.slug}
-                          className="text-xs bg-pink-900/10 text-pink-900 px-2 py-0.5 rounded-full"
+                          className="text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded-full"
                         >
                           {tag.name}
                         </span>
@@ -244,7 +261,7 @@ export default function ExplorePage() {
       </div>
 
       {/* Right Panel */}
-      <aside className="hidden lg:flex flex-col w-80 flex-shrink-0 gap-6 p-4">
+      <aside className="hidden xl:flex flex-col w-80 flex-shrink-0 gap-6 p-4">
         <div className="p-4 bg-white rounded-xl shadow-sm">
           <h4 className="font-bold text-lg mb-3 text-gray-900">Trending Topics</h4>
           <ul className="flex flex-col gap-2">
@@ -252,8 +269,8 @@ export default function ExplorePage() {
               <li
                 key={topic}
                 onClick={() => setSelectedTag(topic)}
-                className={`text-gray-700 hover:bg-pink-50 hover:text-pink-900 px-3 py-1 rounded-full cursor-pointer transition ${
-                  selectedTag === topic ? "bg-pink-50 text-pink-900" : ""
+                className={`text-gray-700 hover:bg-gray-100 hover:text-gray-900 px-3 py-1 rounded-full cursor-pointer transition ${
+                  selectedTag === topic ? "bg-gray-100 text-gray-900" : ""
                 }`}
               >
                 #{topic}

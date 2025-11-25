@@ -173,12 +173,12 @@ export default function CreatePostPage() {
   };
 
   return (
-    <div className="max-w-4xl font-serif text-gray-700 mx-auto px-6 py-10">
+    <div className="max-w-4xl font-serif text-gray-900 mx-auto px-4 sm:px-6 py-6 sm:py-10">
       {/* HEADER */}
-      <div className="flex items-center justify-between mb-8 border-b pb-4">
-        <h1 className="text-3xl font-bold tracking-tight">Write a Story</h1>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 sm:mb-8 border-b pb-4 gap-4">
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900">Write a Story</h1>
 
-        <div className="flex gap-3">
+        <div className="flex gap-3 w-full sm:w-auto">
           {/* Save as Draft */}
           <button
             type="button"
@@ -209,7 +209,7 @@ export default function CreatePostPage() {
             placeholder="Title"
             value={title}
             onChange={(e) => handleTitleChange(e.target.value)}
-            className="w-full text-5xl font-bold outline-none p-2 border-b-2 border-transparent focus:border-gray-300 transition"
+            className="w-full text-3xl sm:text-4xl lg:text-5xl font-bold outline-none p-2 border-b-2 border-transparent focus:border-gray-300 transition text-gray-900 bg-white placeholder-gray-500"
           />
         </div>
 
@@ -280,7 +280,7 @@ export default function CreatePostPage() {
             {tags.map((tag) => (
               <span
                 key={tag}
-                className="inline-flex items-center gap-2 px-3 py-1 bg-pink-100 text-pink-900 rounded-full text-sm"
+                className="inline-flex items-center gap-2 px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm"
               >
                 {tag}
                 <button
@@ -305,7 +305,7 @@ export default function CreatePostPage() {
                   addTag();
                 }
               }}
-              className="flex-1 px-4 py-2 border rounded-lg outline-none focus:border-pink-900 focus:ring-1 focus:ring-pink-900"
+              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900 text-gray-900 bg-white placeholder-gray-500"
             />
             <button
               type="button"

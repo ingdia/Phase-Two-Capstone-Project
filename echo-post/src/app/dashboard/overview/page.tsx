@@ -173,24 +173,13 @@ export default function HomePage() {
 
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-10 text-gray-800">
-
-      
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-10 text-gray-800">
       <Banner />
-
       
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-
-       
-        <div className="lg:col-span-2 space-y-10">
-
-          
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 lg:gap-10">
+        <div className="xl:col-span-2 space-y-6 lg:space-y-10">
           <Categories categories={categories} />
-
-         
           <FeaturedStories posts={featuredPosts} />
-
-         
           <LatestArticles
             latestPosts={latestPosts}
             bookmarked={bookmarked}
@@ -199,9 +188,8 @@ export default function HomePage() {
             onLike={toggleLike}
           />
         </div>
-
         
-        <aside className="space-y-10">
+        <aside className="space-y-6 lg:space-y-10">
           <TrendingAuthors limit={3} />
           <TrendingStories />
         </aside>

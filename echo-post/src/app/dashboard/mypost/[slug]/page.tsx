@@ -55,6 +55,8 @@ export default function ReaderPage() {
   const [showMenu, setShowMenu] = useState(false);
   const [comments, setComments] = useState<any[]>([]);
   const [commentText, setCommentText] = useState("");
+  const [replyText, setReplyText] = useState("");
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [submittingComment, setSubmittingComment] = useState(false);
   const [loadingComments, setLoadingComments] = useState(false);
   const articleRef = useRef<HTMLElement | null>(null);
@@ -233,11 +235,8 @@ export default function ReaderPage() {
       });
 
       if (res.ok) {
-        const data = await res.json();
-        // Add new comment to the beginning (most recent first)
-        setComments((prev) => [data.comment, ...prev]);
+        fetchCommentsForPost(post.id);
         setCommentText("");
-        // Update comment count in post
         const postRes = await fetch(`/post/${slug}`, {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         });
@@ -252,6 +251,43 @@ export default function ReaderPage() {
     } catch (err) {
       console.error("Error posting comment:", err);
       alert("Failed to post comment. Please try again.");
+    } finally {
+      setSubmittingComment(false);
+    }
+  };
+
+  const handleReply = async (parentId: string) => {
+    if (!user || !token || !post || !replyText.trim()) return;
+
+    setSubmittingComment(true);
+    try {
+      const res = await fetch(`/post/${slug}/comments`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ content: replyText.trim(), parentId }),
+      });
+
+      if (res.ok) {
+        fetchCommentsForPost(post.id);
+        setReplyText("");
+        setReplyingTo(null);
+        const postRes = await fetch(`/post/${slug}`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        if (postRes.ok) {
+          const postData = await postRes.json();
+          setPost(postData);
+        }
+      } else {
+        const errorData = await res.json();
+        alert(errorData.error || "Failed to post reply");
+      }
+    } catch (err) {
+      console.error("Error posting reply:", err);
+      alert("Failed to post reply. Please try again.");
     } finally {
       setSubmittingComment(false);
     }
@@ -362,7 +398,7 @@ export default function ReaderPage() {
         />
       </div>
 
-      <main className="max-w-5xl mx-auto px-6 py-10">
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
         {/* Cover */}
         {post.coverImage && (
         <div className="w-full rounded-lg overflow-hidden shadow-lg mb-8">
@@ -376,7 +412,7 @@ export default function ReaderPage() {
 
         {/* Meta & actions */}
         <header className="mb-8">
-          <h1 className="text-4xl font-bold text-black mb-3">{post.title}</h1>
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-3">{post.title}</h1>
 
           {/* Tags */}
           {post.tags && post.tags.length > 0 && (
@@ -384,7 +420,7 @@ export default function ReaderPage() {
               {post.tags.map((tag) => (
                 <span
                   key={tag.slug}
-                  className="text-xs bg-pink-900/10 text-pink-900 px-2 py-1 rounded-full"
+                  className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full"
                 >
                   {tag.name}
                 </span>
@@ -408,7 +444,7 @@ export default function ReaderPage() {
               <div>
                 <Link
                   href={`/dashboard/profile`}
-                  className="text-sm font-medium text-black hover:text-pink-900"
+                  className="text-sm font-medium text-gray-900 hover:text-pink-900"
                 >
                   {authorName}
                 </Link>
@@ -457,7 +493,7 @@ export default function ReaderPage() {
               {user && (
               <button
                   onClick={handleLike}
-                className={`px-3 py-1 rounded-md border ${clapped ? "bg-pink-900 text-white border-pink-900" : "bg-white text-black border-gray-200"} transition`}
+                className={`px-3 py-1 rounded-md border ${clapped ? "bg-gray-900 text-white border-gray-900" : "bg-white text-gray-900 border-gray-200"} transition`}
               >
                   <Heart className={`inline w-4 h-4 mr-2 ${clapped ? "fill-current" : ""}`} /> {post._count.likes}
               </button>
@@ -470,7 +506,7 @@ export default function ReaderPage() {
                 <Bookmark className="inline w-4 h-4 mr-2" /> {bookmarked ? "Saved" : "Save"}
               </button>
 
-              <button className="px-3 py-1 rounded-md border bg-white text-black border-gray-200">
+              <button className="px-3 py-1 rounded-md border bg-white text-gray-900 border-gray-200 hover:bg-gray-50 transition">
                 <Share2 className="inline w-4 h-4 mr-2" /> Share
               </button>
             </div>
@@ -563,13 +599,13 @@ export default function ReaderPage() {
                   </div>
                 )}
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-black mb-1">
+                  <p className="text-sm font-medium text-gray-900 mb-1">
                     {user.name || user.username || "You"}
                   </p>
                   <textarea
                     value={commentText}
                     onChange={(e) => setCommentText(e.target.value)}
-                    className="w-full border rounded-md p-3 resize-none focus:outline-none focus:ring-2 focus:ring-pink-900 focus:border-transparent"
+                    className="w-full border rounded-md p-3 resize-none focus:outline-none focus:ring-2 focus:ring-pink-900 focus:border-transparent text-gray-900 bg-white placeholder-gray-500"
                     rows={4}
                     placeholder="Write a response..."
                   />
@@ -621,30 +657,133 @@ export default function ReaderPage() {
                 const commentAuthorInitials = commentAuthorName.charAt(0).toUpperCase();
                 
                 return (
-                  <div key={comment.id} className="bg-white border rounded-xl p-4">
-                    <div className="flex items-start gap-3">
-                      {comment.author.avatarUrl ? (
-                        <img
-                          src={comment.author.avatarUrl}
-                          alt={commentAuthorName}
-                          className="w-10 h-10 rounded-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-10 h-10 rounded-full bg-pink-900 flex items-center justify-center text-white font-semibold">
-                          {commentAuthorInitials}
+                  <div key={comment.id} className="space-y-4">
+                    <div className="bg-white border rounded-xl p-4">
+                      <div className="flex items-start gap-3">
+                        {comment.author.avatarUrl ? (
+                          <img
+                            src={comment.author.avatarUrl}
+                            alt={commentAuthorName}
+                            className="w-10 h-10 rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-10 h-10 rounded-full bg-pink-900 flex items-center justify-center text-white font-semibold">
+                            {commentAuthorInitials}
+                          </div>
+                        )}
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-1">
+                            <p className="font-medium text-gray-900">{commentAuthorName}</p>
+                            <p className="text-xs text-gray-500">
+                              {new Date(comment.createdAt).toLocaleDateString()}
+                            </p>
+                          </div>
+                          <p className="text-gray-700 mt-2 whitespace-pre-wrap">{comment.content}</p>
+                          {user && (
+                            <button
+                              onClick={() => setReplyingTo(comment.id)}
+                              className="text-sm text-pink-900 hover:underline mt-2"
+                            >
+                              Reply
+                            </button>
+                          )}
                         </div>
-                      )}
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-1">
-                          <p className="font-medium text-black">{commentAuthorName}</p>
-                          <p className="text-xs text-gray-500">
-                            {new Date(comment.createdAt).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <p className="text-gray-700 mt-2 whitespace-pre-wrap">{comment.content}</p>
                       </div>
-              </div>
-            </div>
+                    </div>
+                    
+                    {/* Replies */}
+                    {comment.replies && comment.replies.length > 0 && (
+                      <div className="ml-12 space-y-3">
+                        {comment.replies.map((reply: any) => {
+                          const replyAuthorName = reply.author.name || reply.author.username || "Anonymous";
+                          const replyAuthorInitials = replyAuthorName.charAt(0).toUpperCase();
+                          
+                          return (
+                            <div key={reply.id} className="bg-gray-50 border rounded-lg p-3">
+                              <div className="flex items-start gap-3">
+                                {reply.author.avatarUrl ? (
+                                  <img
+                                    src={reply.author.avatarUrl}
+                                    alt={replyAuthorName}
+                                    className="w-8 h-8 rounded-full object-cover"
+                                  />
+                                ) : (
+                                  <div className="w-8 h-8 rounded-full bg-pink-900 flex items-center justify-center text-white font-semibold text-xs">
+                                    {replyAuthorInitials}
+                                  </div>
+                                )}
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-3 mb-1">
+                                    <p className="font-medium text-gray-900 text-sm">{replyAuthorName}</p>
+                                    <p className="text-xs text-gray-500">
+                                      {new Date(reply.createdAt).toLocaleDateString()}
+                                    </p>
+                                  </div>
+                                  <p className="text-gray-700 text-sm whitespace-pre-wrap">{reply.content}</p>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                    
+                    {/* Reply Form */}
+                    {replyingTo === comment.id && user && (
+                      <div className="ml-12 bg-white border rounded-xl p-4">
+                        <div className="flex items-start gap-3 mb-3">
+                          {user.avatarUrl ? (
+                            <img
+                              src={user.avatarUrl}
+                              alt={user.name || user.username || "You"}
+                              className="w-8 h-8 rounded-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-pink-900 flex items-center justify-center text-white font-semibold text-xs">
+                              {(user.name || user.username || "U").charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                          <div className="flex-1">
+                            <textarea
+                              value={replyText}
+                              onChange={(e) => setReplyText(e.target.value)}
+                              className="w-full border rounded-md p-3 resize-none focus:outline-none focus:ring-2 focus:ring-pink-900 focus:border-transparent text-gray-900 bg-white placeholder-gray-500"
+                              rows={3}
+                              placeholder="Write a reply..."
+                            />
+                          </div>
+                        </div>
+                        <div className="flex justify-end gap-3">
+                          <button
+                            onClick={() => {
+                              setReplyingTo(null);
+                              setReplyText("");
+                            }}
+                            className="px-4 py-2 rounded-full border border-gray-300 hover:bg-gray-50 transition"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            onClick={() => handleReply(comment.id)}
+                            disabled={!replyText.trim() || submittingComment}
+                            className="px-4 py-2 rounded-full bg-pink-900 text-white hover:bg-pink-800 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                          >
+                            {submittingComment ? (
+                              <>
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                                Replying...
+                              </>
+                            ) : (
+                              <>
+                                <Send className="w-4 h-4" />
+                                Reply
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 );
               })
             )}

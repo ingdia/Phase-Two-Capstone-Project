@@ -139,7 +139,7 @@ const TrendingAuthors: React.FC<TrendingAuthorsProps> = ({
             className="flex items-center justify-between hover:bg-gray-50 p-3 rounded-xl transition"
           >
             <Link
-              href={`/dashboard/profile`}
+              href={`/dashboard/author/${author.id}`}
               className="flex items-center gap-3 flex-1"
             >
               <img

@@ -64,14 +64,18 @@ model Comment {
   content   String
   postId    String
   authorId  String
+  parentId  String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  post   Post @relation(fields: [postId], references: [id])
-  author User @relation(fields: [authorId], references: [id])
+  post     Post      @relation(fields: [postId], references: [id])
+  author   User      @relation(fields: [authorId], references: [id])
+  parent   Comment?  @relation("CommentReplies", fields: [parentId], references: [id])
+  replies  Comment[] @relation("CommentReplies")
 
   @@index([postId])
   @@index([authorId])
+  @@index([parentId])
 }
 
 model Like {
