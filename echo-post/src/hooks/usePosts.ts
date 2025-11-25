@@ -43,6 +43,9 @@ export function usePosts(status?: 'DRAFT' | 'PUBLISHED', author?: string) {
       return res.json();
     },
     enabled: !!token,
+    staleTime: 0, // Always refetch when component mounts
+    refetchOnWindowFocus: true, // Refetch when window gains focus
+    refetchOnMount: true, // Always refetch on mount
   });
 }
 
