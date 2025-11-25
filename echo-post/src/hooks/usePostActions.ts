@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { deletePost, likePost, createComment } from '@/utils/posts';
+import { useApi } from './useApi';
+import { createAuthHeaders } from '@/utils/api';
 
 export const usePostActions = (token: string | null) => {
   const router = useRouter();
@@ -8,6 +9,7 @@ export const usePostActions = (token: string | null) => {
   const [likingPostId, setLikingPostId] = useState<string | null>(null);
   const [submittingComment, setSubmittingComment] = useState<string | null>(null);
   const [likedPosts, setLikedPosts] = useState<Record<string, boolean>>({});
+  const { execute } = useApi();
 
   const handleEdit = (slug: string) => {
     router.push(`/dashboard/mypost/${slug}/edit`);
@@ -17,20 +19,18 @@ export const usePostActions = (token: string | null) => {
     if (!token) return;
 
     setDeletingPostId(postId);
-    try {
-      const result = await deletePost(postSlug, token);
-      if (result.success) {
-        onSuccess?.();
-        alert('Post deleted successfully!');
-      } else {
-        alert(result.error || 'Failed to delete post');
-      }
-    } catch (err) {
-      console.error('Error deleting post:', err);
-      alert('Failed to delete post. Please try again.');
-    } finally {
-      setDeletingPostId(null);
+    
+    const result = await execute(`/post/${postSlug}`, {
+      method: 'DELETE',
+      headers: createAuthHeaders(token),
+    });
+
+    if (result.success) {
+      onSuccess?.();
     }
+    
+    setDeletingPostId(null);
+    return result;
   };
 
   const handleLike = async (postId: string) => {
@@ -42,42 +42,39 @@ export const usePostActions = (token: string | null) => {
     // Optimistic update
     setLikedPosts((prev) => ({ ...prev, [postId]: !wasLiked }));
 
-    try {
-      const result = await likePost(postId, token);
-      if (result.success) {
-        setLikedPosts((prev) => ({ ...prev, [postId]: result.data.liked }));
-      } else {
-        // Revert on error
-        setLikedPosts((prev) => ({ ...prev, [postId]: wasLiked }));
-        alert(result.error || 'Failed to like post');
-      }
-    } catch (err) {
-      console.error('Error liking post:', err);
+    const result = await execute(`/post/${postId}/like`, {
+      method: 'POST',
+      headers: createAuthHeaders(token),
+    });
+
+    if (result.success) {
+      setLikedPosts((prev) => ({ ...prev, [postId]: result.data.liked }));
+    } else {
+      // Revert on error
       setLikedPosts((prev) => ({ ...prev, [postId]: wasLiked }));
-      alert('Failed to like post. Please try again.');
-    } finally {
-      setLikingPostId(null);
     }
+    
+    setLikingPostId(null);
+    return result;
   };
 
   const handleComment = async (postId: string, content: string, onSuccess?: () => void) => {
     if (!token || !content.trim() || submittingComment) return;
 
     setSubmittingComment(postId);
-    try {
-      const result = await createComment(postId, content.trim(), token);
-      if (result.success) {
-        onSuccess?.();
-        alert('Comment posted successfully!');
-      } else {
-        alert(result.error || 'Failed to post comment');
-      }
-    } catch (err) {
-      console.error('Error posting comment:', err);
-      alert('Failed to post comment. Please try again.');
-    } finally {
-      setSubmittingComment(null);
+    
+    const result = await execute(`/post/${postId}/comments`, {
+      method: 'POST',
+      headers: createAuthHeaders(token),
+      body: JSON.stringify({ content: content.trim() }),
+    });
+
+    if (result.success) {
+      onSuccess?.();
     }
+    
+    setSubmittingComment(null);
+    return result;
   };
 
   return {

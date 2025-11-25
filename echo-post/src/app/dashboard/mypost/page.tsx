@@ -5,8 +5,9 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { usePosts } from "@/hooks/usePosts";
 import { usePostActions } from "@/hooks/usePostActions";
-import LoadingSpinner from "@/components/ui/LoadingSpinner";
-import ErrorMessage from "@/components/ui/ErrorMessage";
+import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
+import LoadingState from "@/components/ui/LoadingState";
+import ErrorState from "@/components/ui/ErrorState";
 import PostCard from "@/components/posts/PostCard";
 import PostTabs from "@/components/posts/PostTabs";
 import EmptyState from "@/components/posts/EmptyState";
@@ -73,23 +74,24 @@ export default function MyPostsPage() {
 
   if (loading) {
     return (
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-12 min-h-screen">
-        <LoadingSpinner size="lg" text="Loading your posts..." />
-      </div>
+      <LoadingState 
+        size="lg" 
+        text="Loading your posts..." 
+        fullScreen 
+      />
     );
   }
 
   if (error) {
     return (
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-12 min-h-screen">
-        <ErrorMessage 
-          message="Failed to load your posts. Please try again." 
-          onRetry={() => {
-            refetchDrafts();
-            refetchPublished();
-          }}
-        />
-      </div>
+      <ErrorState 
+        message="Failed to load your posts. Please try again." 
+        onRetry={() => {
+          refetchDrafts();
+          refetchPublished();
+        }}
+        fullScreen
+      />
     );
   }
 
@@ -98,53 +100,56 @@ export default function MyPostsPage() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-12 min-h-screen">
-      <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-6 sm:mb-8 text-gray-900">
-        My Posts
-      </h1>
+    <ErrorBoundary>
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-12 min-h-screen">
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-6 sm:mb-8 text-gray-900">
+          My Posts
+        </h1>
 
-      <PostTabs activeTab={activeTab} onTabChange={setActiveTab} />
+        <PostTabs activeTab={activeTab} onTabChange={setActiveTab} />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
-        {currentPosts.map((post) => (
-          <PostCard
-            key={post.id}
-            post={post}
-            onEdit={handleEdit}
-            onDelete={(id) => setShowDeleteConfirm(id)}
-            onLike={handleLike}
-            onComment={(id) => {
-              setShowCommentModal(id);
-              if (!commentText[id]) {
-                setCommentText(prev => ({ ...prev, [id]: '' }));
-              }
-            }}
-            isDeleting={deletingPostId === post.id}
-            isLiking={likingPostId === post.id}
-            isLiked={likedPosts[post.id]}
-          />
-        ))}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
+          {currentPosts.map((post) => (
+            <ErrorBoundary key={post.id}>
+              <PostCard
+                post={post}
+                onEdit={handleEdit}
+                onDelete={(id) => setShowDeleteConfirm(id)}
+                onLike={handleLike}
+                onComment={(id) => {
+                  setShowCommentModal(id);
+                  if (!commentText[id]) {
+                    setCommentText(prev => ({ ...prev, [id]: '' }));
+                  }
+                }}
+                isDeleting={deletingPostId === post.id}
+                isLiking={likingPostId === post.id}
+                isLiked={likedPosts[post.id]}
+              />
+            </ErrorBoundary>
+          ))}
+        </div>
+
+        <DeleteConfirmModal
+          isOpen={!!showDeleteConfirm}
+          onClose={() => setShowDeleteConfirm(null)}
+          onConfirm={() => showDeleteConfirm && handleDeleteConfirm(showDeleteConfirm)}
+          isDeleting={!!deletingPostId}
+        />
+
+        <CommentModal
+          isOpen={!!showCommentModal}
+          onClose={() => setShowCommentModal(null)}
+          onSubmit={() => showCommentModal && handleCommentSubmit(showCommentModal)}
+          commentText={showCommentModal ? commentText[showCommentModal] || '' : ''}
+          onCommentChange={(text) => {
+            if (showCommentModal) {
+              setCommentText(prev => ({ ...prev, [showCommentModal]: text }));
+            }
+          }}
+          isSubmitting={!!submittingComment}
+        />
       </div>
-
-      <DeleteConfirmModal
-        isOpen={!!showDeleteConfirm}
-        onClose={() => setShowDeleteConfirm(null)}
-        onConfirm={() => showDeleteConfirm && handleDeleteConfirm(showDeleteConfirm)}
-        isDeleting={!!deletingPostId}
-      />
-
-      <CommentModal
-        isOpen={!!showCommentModal}
-        onClose={() => setShowCommentModal(null)}
-        onSubmit={() => showCommentModal && handleCommentSubmit(showCommentModal)}
-        commentText={showCommentModal ? commentText[showCommentModal] || '' : ''}
-        onCommentChange={(text) => {
-          if (showCommentModal) {
-            setCommentText(prev => ({ ...prev, [showCommentModal]: text }));
-          }
-        }}
-        isSubmitting={!!submittingComment}
-      />
-    </div>
+    </ErrorBoundary>
   );
 }
