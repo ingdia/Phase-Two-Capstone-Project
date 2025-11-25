@@ -61,12 +61,15 @@ export interface Comment {
 }
 
 // API Response Types
-export interface ApiResponse<T = any> {
-  success: boolean;
-  data?: T;
-  error?: string;
-  message?: string;
+export interface ApiError {
+  code: string;
+  message: string;
+  details?: Record<string, unknown>;
 }
+
+export type ApiResponse<T = unknown> = 
+  | { success: true; data: T; error?: never }
+  | { success: false; error: ApiError; data?: never };
 
 // Auth Types
 export interface LoginCredentials {
@@ -87,8 +90,26 @@ export interface AuthResponse {
 }
 
 // UI State Types
-export type PostStatus = 'DRAFT' | 'PUBLISHED';
-export type TabType = 'DRAFTS' | 'PUBLISHED';
+export const POST_STATUS = {
+  DRAFT: 'DRAFT',
+  PUBLISHED: 'PUBLISHED',
+} as const;
+
+export type PostStatus = typeof POST_STATUS[keyof typeof POST_STATUS];
+
+export const TAB_TYPE = {
+  DRAFTS: 'DRAFTS',
+  PUBLISHED: 'PUBLISHED',
+} as const;
+
+export type TabType = typeof TAB_TYPE[keyof typeof TAB_TYPE];
+
+// Loading States
+export type LoadingState<T, E = ApiError> = 
+  | { status: 'idle'; data?: never; error?: never }
+  | { status: 'loading'; data?: never; error?: never }
+  | { status: 'success'; data: T; error?: never }
+  | { status: 'error'; data?: never; error: E };
 
 // Hook Types
 export interface UsePostsOptions {

@@ -15,7 +15,7 @@ import PostTabs from "@/components/posts/PostTabs";
 import EmptyState from "@/components/posts/EmptyState";
 import CommentModal from "@/components/modals/CommentModal";
 import DeleteConfirmModal from "@/components/modals/DeleteConfirmModal";
-import { TabType } from "@/types";
+import { TabType, Post, ApiError } from "@/types";
 
 export default function MyPostsPage() {
   const { user, token, initializing } = useAuth();
@@ -27,8 +27,19 @@ export default function MyPostsPage() {
   const [showCommentModal, setShowCommentModal] = useState<string | null>(null);
   const [commentText, setCommentText] = useState<Record<string, string>>({});
 
-  const { data: draftsData, isLoading: draftsLoading, error: draftsError, refetch: refetchDrafts } = usePosts('DRAFT', user?.id);
-  const { data: publishedData, isLoading: publishedLoading, error: publishedError, refetch: refetchPublished } = usePosts('PUBLISHED', user?.id);
+  const { 
+    data: draftsData, 
+    isLoading: draftsLoading, 
+    error: draftsError, 
+    refetch: refetchDrafts 
+  } = usePosts('DRAFT', user?.id);
+  
+  const { 
+    data: publishedData, 
+    isLoading: publishedLoading, 
+    error: publishedError, 
+    refetch: refetchPublished 
+  } = usePosts('PUBLISHED', user?.id);
   
   const {
     deletingPostId,
@@ -41,10 +52,10 @@ export default function MyPostsPage() {
     handleComment,
   } = usePostActions(token);
 
-  const drafts = draftsData?.items || [];
-  const published = publishedData?.items || [];
-  const loading = draftsLoading || publishedLoading;
-  const error = draftsError || publishedError;
+  const drafts: Post[] = draftsData?.items || [];
+  const published: Post[] = publishedData?.items || [];
+  const loading: boolean = draftsLoading || publishedLoading;
+  const error: ApiError | null = (draftsError || publishedError) as ApiError | null;
 
   useEffect(() => {
     if (!initializing && !user) {
@@ -62,10 +73,10 @@ export default function MyPostsPage() {
 
 
 
-  const currentPosts = activeTab === "DRAFTS" ? drafts : published;
+  const currentPosts: Post[] = activeTab === "DRAFTS" ? drafts : published;
 
-  const handleDeleteConfirm = (postId: string) => {
-    const post = currentPosts.find(p => p.id === postId);
+  const handleDeleteConfirm = (postId: string): void => {
+    const post: Post | undefined = currentPosts.find(p => p.id === postId);
     if (post) {
       handleDelete(post.slug, postId, () => {
         if (activeTab === "DRAFTS") {
@@ -78,7 +89,7 @@ export default function MyPostsPage() {
     }
   };
 
-  const handleCommentSubmit = (postId: string) => {
+  const handleCommentSubmit = (postId: string): void => {
     handleComment(postId, commentText[postId] || '', () => {
       setCommentText(prev => ({ ...prev, [postId]: '' }));
       setShowCommentModal(null);
@@ -117,7 +128,7 @@ export default function MyPostsPage() {
 
         <PostTabs 
           activeTab={activeTab} 
-          onTabChange={(tab) => {
+          onTabChange={(tab: TabType) => {
             setActiveTab(tab);
             // Sync data when switching tabs
             syncPostData();
@@ -135,7 +146,7 @@ export default function MyPostsPage() {
                   onEdit={handleEdit}
                   onDelete={(id) => setShowDeleteConfirm(id)}
                   onLike={handleLike}
-                  onComment={(id) => {
+                  onComment={(id: string) => {
                     setShowCommentModal(id);
                     if (!commentText[id]) {
                       setCommentText(prev => ({ ...prev, [id]: '' }));
@@ -162,7 +173,7 @@ export default function MyPostsPage() {
           onClose={() => setShowCommentModal(null)}
           onSubmit={() => showCommentModal && handleCommentSubmit(showCommentModal)}
           commentText={showCommentModal ? commentText[showCommentModal] || '' : ''}
-          onCommentChange={(text) => {
+          onCommentChange={(text: string) => {
             if (showCommentModal) {
               setCommentText(prev => ({ ...prev, [showCommentModal]: text }));
             }
