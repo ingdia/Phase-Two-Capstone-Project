@@ -6,7 +6,7 @@ interface EmptyStateProps {
   activeTab: TabType;
 }
 
-export default function EmptyState({ activeTab }: EmptyStateProps) {
+const EmptyState = React.memo(function EmptyState({ activeTab }: EmptyStateProps) {
   return (
     <div className="max-w-4xl mx-auto px-6 py-20 text-center">
       <h2 className="text-2xl font-semibold text-gray-700 mb-4">
@@ -20,4 +20,6 @@ export default function EmptyState({ activeTab }: EmptyStateProps) {
       </Link>
     </div>
   );
-}
+});
+
+export default EmptyState;

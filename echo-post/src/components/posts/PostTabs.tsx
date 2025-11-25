@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { TabType } from '@/types';
 
 interface PostTabsProps {
@@ -6,7 +6,14 @@ interface PostTabsProps {
   onTabChange: (tab: TabType) => void;
 }
 
-export default function PostTabs({ activeTab, onTabChange }: PostTabsProps) {
+const PostTabs = React.memo(function PostTabs({ activeTab, onTabChange }: PostTabsProps) {
+  const handleDraftsClick = useCallback(() => {
+    onTabChange('DRAFTS');
+  }, [onTabChange]);
+
+  const handlePublishedClick = useCallback(() => {
+    onTabChange('PUBLISHED');
+  }, [onTabChange]);
   return (
     <div className="flex border-b border-gray-200 mb-8">
       <button
@@ -15,7 +22,7 @@ export default function PostTabs({ activeTab, onTabChange }: PostTabsProps) {
             ? "text-gray-900 border-b-4 border-gray-900"
             : "text-gray-600"
         }`}
-        onClick={() => onTabChange("DRAFTS")}
+        onClick={handleDraftsClick}
       >
         Drafts
       </button>
@@ -26,10 +33,12 @@ export default function PostTabs({ activeTab, onTabChange }: PostTabsProps) {
             ? "text-gray-900 border-b-4 border-gray-900"
             : "text-gray-600"
         }`}
-        onClick={() => onTabChange("PUBLISHED")}
+        onClick={handlePublishedClick}
       >
         Published
       </button>
     </div>
   );
-}
+});
+
+export default PostTabs;

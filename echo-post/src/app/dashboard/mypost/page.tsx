@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from "@/context/AuthContext";
@@ -10,11 +10,9 @@ import { usePostStatusSync } from "@/hooks/usePostStatusSync";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import LoadingState from "@/components/ui/LoadingState";
 import ErrorState from "@/components/ui/ErrorState";
-import PostCard from "@/components/posts/PostCard";
+import { LazyPostCard, LazyCommentModal, LazyDeleteConfirmModal } from "@/components/lazy/LazyComponents";
 import PostTabs from "@/components/posts/PostTabs";
 import EmptyState from "@/components/posts/EmptyState";
-import CommentModal from "@/components/modals/CommentModal";
-import DeleteConfirmModal from "@/components/modals/DeleteConfirmModal";
 import { TabType, Post, ApiError } from "@/types";
 
 export default function MyPostsPage() {
@@ -75,7 +73,7 @@ export default function MyPostsPage() {
 
   const currentPosts: Post[] = activeTab === "DRAFTS" ? drafts : published;
 
-  const handleDeleteConfirm = (postId: string): void => {
+  const handleDeleteConfirm = useCallback((postId: string): void => {
     const post: Post | undefined = currentPosts.find(p => p.id === postId);
     if (post) {
       handleDelete(post.slug, postId, () => {
@@ -87,14 +85,41 @@ export default function MyPostsPage() {
         setShowDeleteConfirm(null);
       });
     }
-  };
+  }, [currentPosts, handleDelete, activeTab, refetchDrafts, refetchPublished]);
 
-  const handleCommentSubmit = (postId: string): void => {
+  const handleCommentSubmit = useCallback((postId: string): void => {
     handleComment(postId, commentText[postId] || '', () => {
       setCommentText(prev => ({ ...prev, [postId]: '' }));
       setShowCommentModal(null);
     });
-  };
+  }, [handleComment, commentText]);
+
+  const handleTabChange = useCallback((tab: TabType) => {
+    setActiveTab(tab);
+    syncPostData();
+  }, [syncPostData]);
+
+  const handleDeleteClick = useCallback((id: string) => {
+    setShowDeleteConfirm(id);
+  }, []);
+
+  const handleCommentClick = useCallback((id: string) => {
+    setShowCommentModal(id);
+    if (!commentText[id]) {
+      setCommentText(prev => ({ ...prev, [id]: '' }));
+    }
+  }, [commentText]);
+
+  const handleCommentChange = useCallback((text: string) => {
+    if (showCommentModal) {
+      setCommentText(prev => ({ ...prev, [showCommentModal]: text }));
+    }
+  }, [showCommentModal]);
+
+  const handleCloseModals = useCallback(() => {
+    setShowDeleteConfirm(null);
+    setShowCommentModal(null);
+  }, []);
 
   if (loading) {
     return (
@@ -128,11 +153,7 @@ export default function MyPostsPage() {
 
         <PostTabs 
           activeTab={activeTab} 
-          onTabChange={(tab: TabType) => {
-            setActiveTab(tab);
-            // Sync data when switching tabs
-            syncPostData();
-          }} 
+          onTabChange={handleTabChange}
         />
 
         {currentPosts.length === 0 ? (
@@ -141,45 +162,42 @@ export default function MyPostsPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
             {currentPosts.map((post) => (
               <ErrorBoundary key={post.id}>
-                <PostCard
-                  post={post}
-                  onEdit={handleEdit}
-                  onDelete={(id) => setShowDeleteConfirm(id)}
-                  onLike={handleLike}
-                  onComment={(id: string) => {
-                    setShowCommentModal(id);
-                    if (!commentText[id]) {
-                      setCommentText(prev => ({ ...prev, [id]: '' }));
-                    }
-                  }}
-                  isDeleting={deletingPostId === post.id}
-                  isLiking={likingPostId === post.id}
-                  isLiked={likedPosts[post.id]}
-                />
+                <Suspense fallback={<div className="h-64 bg-gray-100 animate-pulse rounded-2xl" />}>
+                  <LazyPostCard
+                    post={post}
+                    onEdit={handleEdit}
+                    onDelete={handleDeleteClick}
+                    onLike={handleLike}
+                    onComment={handleCommentClick}
+                    isDeleting={deletingPostId === post.id}
+                    isLiking={likingPostId === post.id}
+                    isLiked={likedPosts[post.id]}
+                  />
+                </Suspense>
               </ErrorBoundary>
             ))}
           </div>
         )}
 
-        <DeleteConfirmModal
-          isOpen={!!showDeleteConfirm}
-          onClose={() => setShowDeleteConfirm(null)}
-          onConfirm={() => showDeleteConfirm && handleDeleteConfirm(showDeleteConfirm)}
-          isDeleting={!!deletingPostId}
-        />
+        <Suspense fallback={null}>
+          <LazyDeleteConfirmModal
+            isOpen={!!showDeleteConfirm}
+            onClose={handleCloseModals}
+            onConfirm={() => showDeleteConfirm && handleDeleteConfirm(showDeleteConfirm)}
+            isDeleting={!!deletingPostId}
+          />
+        </Suspense>
 
-        <CommentModal
-          isOpen={!!showCommentModal}
-          onClose={() => setShowCommentModal(null)}
-          onSubmit={() => showCommentModal && handleCommentSubmit(showCommentModal)}
-          commentText={showCommentModal ? commentText[showCommentModal] || '' : ''}
-          onCommentChange={(text: string) => {
-            if (showCommentModal) {
-              setCommentText(prev => ({ ...prev, [showCommentModal]: text }));
-            }
-          }}
-          isSubmitting={!!submittingComment}
-        />
+        <Suspense fallback={null}>
+          <LazyCommentModal
+            isOpen={!!showCommentModal}
+            onClose={handleCloseModals}
+            onSubmit={() => showCommentModal && handleCommentSubmit(showCommentModal)}
+            commentText={showCommentModal ? commentText[showCommentModal] || '' : ''}
+            onCommentChange={handleCommentChange}
+            isSubmitting={!!submittingComment}
+          />
+        </Suspense>
       </div>
     </ErrorBoundary>
   );

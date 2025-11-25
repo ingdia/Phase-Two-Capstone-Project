@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import Link from 'next/link';
 import { Heart, MessageCircle, Calendar, Trash2, Edit, Loader2 } from 'lucide-react';
 import { Post } from '@/types';
 import { formatDate } from '@/utils/posts';
+import OptimizedImage from '@/components/ui/OptimizedImage';
 
 interface PostCardProps {
   post: Post;
@@ -15,7 +16,7 @@ interface PostCardProps {
   isLiked?: boolean;
 }
 
-export default function PostCard({
+const PostCard = React.memo(function PostCard({
   post,
   onEdit,
   onDelete,
@@ -25,27 +26,42 @@ export default function PostCard({
   isLiking,
   isLiked,
 }: PostCardProps) {
+  const handleEditClick = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onEdit(post.slug);
+  }, [onEdit, post.slug]);
+
+  const handleDeleteClick = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onDelete(post.id);
+  }, [onDelete, post.id]);
+
+  const handleLikeClick = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onLike(post.id);
+  }, [onLike, post.id]);
+
+  const handleCommentClick = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onComment(post.id);
+  }, [onComment, post.id]);
   return (
     <div className="group relative bg-white rounded-2xl shadow-md hover:shadow-xl transition p-4 sm:p-6 border border-gray-100">
       {/* Action Buttons */}
       <div className="absolute top-4 right-4 flex gap-2 z-20">
         <button
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            onEdit(post.slug);
-          }}
+          onClick={handleEditClick}
           className="bg-gray-900 text-white p-2.5 rounded-lg hover:bg-gray-800 active:scale-95 shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center group/btn"
           title="Edit post"
         >
           <Edit size={18} className="group-hover/btn:scale-110 transition-transform" />
         </button>
         <button
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            onDelete(post.id);
-          }}
+          onClick={handleDeleteClick}
           disabled={isDeleting}
           className="bg-red-600 text-white p-2.5 rounded-lg hover:bg-red-700 active:scale-95 shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center disabled:opacity-50"
           title="Delete post"
@@ -62,9 +78,11 @@ export default function PostCard({
         {/* Cover Image */}
         {post.coverImage && (
           <div className="mb-4 rounded-xl overflow-hidden">
-            <img
+            <OptimizedImage
               src={post.coverImage}
               alt={post.title}
+              width={400}
+              height={192}
               className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
             />
           </div>
@@ -103,11 +121,7 @@ export default function PostCard({
             </div>
             <div className="flex items-center gap-4">
               <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onLike(post.id);
-                }}
+                onClick={handleLikeClick}
                 disabled={isLiking}
                 className={`flex items-center gap-1 transition ${
                   isLiked ? 'text-red-500' : 'text-gray-500 hover:text-red-500'
@@ -117,11 +131,7 @@ export default function PostCard({
                 <span>{post._count?.likes || 0}</span>
               </button>
               <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onComment(post.id);
-                }}
+                onClick={handleCommentClick}
                 className="flex items-center gap-1 text-gray-500 hover:text-blue-500 transition"
               >
                 <MessageCircle size={16} />
@@ -133,4 +143,6 @@ export default function PostCard({
       </Link>
     </div>
   );
-}
+});
+
+export default PostCard;
