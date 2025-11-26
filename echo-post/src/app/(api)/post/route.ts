@@ -55,9 +55,9 @@ export async function GET(req: Request) {
     });
 
     return NextResponse.json({
-      items: items.map((p) => ({
+      items: items.map((p: any) => ({
         ...p,
-        tags: p.tags.map((pt) => pt.tag),
+        tags: p.tags.map((pt: any) => pt.tag),
       })),
       total,
       page,

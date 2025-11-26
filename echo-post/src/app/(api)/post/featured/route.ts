@@ -37,16 +37,16 @@ export async function GET(req: Request) {
 
         // Sort by like count and take top N
         const posts = allPosts
-            .sort((a, b) => (b._count.likes || 0) - (a._count.likes || 0))
+            .sort((a: any, b: any) => (b._count.likes || 0) - (a._count.likes || 0))
             .slice(0, limit);
 
         // Calculate read time for each post
-        const postsWithReadTime = posts.map((post) => {
+        const postsWithReadTime = posts.map((post: any) => {
             const words = post.content.split(/\s+/).length;
             const readTime = Math.ceil(words / 200);
             return {
                 ...post,
-                tags: post.tags.map((pt) => pt.tag),
+                tags: post.tags.map((pt: any) => pt.tag),
                 readTime: `${readTime} min read`,
             };
         });

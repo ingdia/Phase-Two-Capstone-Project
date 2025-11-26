@@ -74,12 +74,12 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
 
     // Has user liked?
     const userLiked = userId
-      ? post.likes.some((like) => like.userId === userId)
+      ? post.likes.some((like: { userId: string }) => like.userId === userId)
       : false;
 
     return NextResponse.json({
       ...post,
-      tags: post.tags.map((pt) => pt.tag),
+      tags: post.tags.map((pt: any) => pt.tag),
       likeCount: post.likes.length,
       readTime: `${readTime} min read`,
       userLiked,

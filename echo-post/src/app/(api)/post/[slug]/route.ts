@@ -70,12 +70,12 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
     const readTime = Math.ceil(words / 200);
 
     const userLiked = userId
-      ? post.likes.some((like) => like.userId === userId)
+      ? post.likes.some((like: { userId: string }) => like.userId === userId)
       : false;
 
     return NextResponse.json({
       ...post,
-      tags: post.tags.map((pt) => pt.tag),
+      tags: post.tags.map((pt: { tag: any }) => pt.tag),
       likeCount: post.likes.length,
       readTime: `${readTime} min read`,
       userLiked,
@@ -154,7 +154,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ slug: st
 
     return NextResponse.json({
       ...finalPost,
-      tags: finalPost?.tags.map((pt) => pt.tag) || [],
+      tags: finalPost?.tags.map((pt: { tag: any }) => pt.tag) || [],
     });
   } catch (err) {
     console.error("Error updating post:", err);
