@@ -34,10 +34,8 @@ export default function PostPage() {
 
   useEffect(() => {
     if (user && post) {
-      const userLiked = post.userLiked !== undefined 
-        ? post.userLiked 
-        : (post.likes && post.likes.some((like: any) => like.userId === user.id));
-      setClapped(userLiked || false);
+      // Initialize clapped state - this would need to be fetched from API
+      setClapped(false);
     }
   }, [user, post]);
 
@@ -65,7 +63,7 @@ export default function PostPage() {
     commentMutation.mutate({ postSlug: slug, content, parentId });
   };
 
-  const isAuthor = user && post && user.id === post.author.id;
+  const isAuthor = Boolean(user && post && user.id === post.author.id);
 
   if (loading) {
     return <LoadingSpinner size="lg" text="Loading post..." />;

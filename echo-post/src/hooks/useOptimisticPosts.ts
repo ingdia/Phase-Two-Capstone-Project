@@ -14,8 +14,8 @@ export function useOptimisticPosts(initialPosts: Post[] = []) {
         ? { 
             ...post, 
             _count: { 
-              ...post._count, 
-              likes: (post._count?.likes || 0) + 1 
+              likes: (post._count?.likes || 0) + 1,
+              comments: post._count?.comments || 0
             } 
           }
         : post
@@ -33,8 +33,8 @@ export function useOptimisticPosts(initialPosts: Post[] = []) {
           ? { 
               ...post, 
               _count: { 
-                ...post._count, 
-                likes: Math.max((post._count?.likes || 1) - 1, 0) 
+                likes: Math.max((post._count?.likes || 1) - 1, 0),
+                comments: post._count?.comments || 0
               } 
             }
           : post
@@ -71,8 +71,8 @@ export function useOptimisticPosts(initialPosts: Post[] = []) {
         ? { 
             ...post, 
             _count: { 
-              ...post._count, 
-              comments: (post._count?.comments || 0) + 1 
+              likes: post._count?.likes || 0,
+              comments: (post._count?.comments || 0) + 1
             } 
           }
         : post
@@ -91,8 +91,8 @@ export function useOptimisticPosts(initialPosts: Post[] = []) {
           ? { 
               ...post, 
               _count: { 
-                ...post._count, 
-                comments: Math.max((post._count?.comments || 1) - 1, 0) 
+                likes: post._count?.likes || 0,
+                comments: Math.max((post._count?.comments || 1) - 1, 0)
               } 
             }
           : post

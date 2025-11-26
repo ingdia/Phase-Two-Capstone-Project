@@ -14,7 +14,7 @@ interface PostActionState {
 interface PostActionHandlers {
   handleEdit: (slug: string) => void;
   handleDelete: (postSlug: string, postId: string, onSuccess?: () => void) => Promise<ApiResponse<unknown>>;
-  handleLike: (postId: string) => Promise<ApiResponse<{ liked: boolean }>>;
+  handleLike: (postId: string) => Promise<ApiResponse<unknown>>;
   handleComment: (postId: string, content: string, onSuccess?: () => void) => Promise<ApiResponse<unknown>>;
 }
 
@@ -57,7 +57,7 @@ export const usePostActionsStrict = (token: string | null): PostActionState & Po
     return result;
   };
 
-  const handleLike = async (postId: string): Promise<ApiResponse<{ liked: boolean }>> => {
+  const handleLike = async (postId: string): Promise<ApiResponse<unknown>> => {
     if (!token || likingPostId) {
       return {
         success: false,
@@ -71,13 +71,14 @@ export const usePostActionsStrict = (token: string | null): PostActionState & Po
     // Optimistic update
     setLikedPosts((prev) => ({ ...prev, [postId]: !wasLiked }));
 
-    const result = await execute<{ liked: boolean }>(`/post/${postId}/like`, {
+    const result = await execute(`/post/${postId}/like`, {
       method: 'POST',
       headers: createAuthHeaders(token),
     });
 
     if (result.success) {
-      setLikedPosts((prev) => ({ ...prev, [postId]: result.data.liked }));
+      const data = result.data as { liked: boolean };
+      setLikedPosts((prev) => ({ ...prev, [postId]: data.liked }));
     } else {
       // Revert on error
       setLikedPosts((prev) => ({ ...prev, [postId]: wasLiked }));

@@ -18,7 +18,7 @@ export const apiRequest = async <T = any>(
     if (!response.ok) {
       return {
         success: false,
-        error: data.error || `HTTP ${response.status}`,
+        error: { code: 'HTTP_ERROR', message: data.error || `HTTP ${response.status}` },
       };
     }
 
@@ -29,7 +29,7 @@ export const apiRequest = async <T = any>(
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Network error',
+      error: { code: 'NETWORK_ERROR', message: error instanceof Error ? error.message : 'Network error' },
     };
   }
 };

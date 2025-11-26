@@ -1,6 +1,6 @@
 "use client";
 
-import { Author } from "@/types/glob";
+import { Author } from "@/types";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import Link from "next/link";
@@ -143,8 +143,8 @@ const TrendingAuthors: React.FC<TrendingAuthorsProps> = ({
               className="flex items-center gap-3 flex-1"
             >
               <img
-                src={author.avatar}
-                alt={author.name}
+                src={author.avatarUrl || '/default-avatar.png'}
+                alt={author.name || 'Author'}
                 className="w-12 h-12 rounded-full object-cover"
                 onError={(e) => {
                   // Fallback to default avatar if image fails to load
@@ -153,7 +153,7 @@ const TrendingAuthors: React.FC<TrendingAuthorsProps> = ({
               />
               <div>
                 <p className="font-semibold text-sm">{author.name}</p>
-                <p className="text-gray-500 text-xs">{author.followers}</p>
+                <p className="text-gray-500 text-xs">Author</p>
               </div>
             </Link>
 

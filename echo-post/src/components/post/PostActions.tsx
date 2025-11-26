@@ -1,5 +1,5 @@
 import { Heart, Bookmark, Share2 } from "lucide-react";
-import { Post } from "@/types/post";
+import { Post } from "@/types";
 
 interface PostActionsProps {
   user: any;
@@ -20,7 +20,7 @@ export default function PostActions({ user, post, clapped, bookmarked, onLike, o
             clapped ? "bg-gray-900 text-white border-gray-900" : "bg-white text-gray-900 border-gray-200"
           } transition`}
         >
-          <Heart className={`inline w-4 h-4 mr-2 ${clapped ? "fill-current" : ""}`} /> {post._count.likes}
+          <Heart className={`inline w-4 h-4 mr-2 ${clapped ? "fill-current" : ""}`} /> {post._count?.likes || 0}
         </button>
       )}
 

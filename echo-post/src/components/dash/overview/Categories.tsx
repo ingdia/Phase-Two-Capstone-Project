@@ -1,4 +1,7 @@
-import { Category } from "@/types/glob";
+type Category = {
+  name: string;
+  color: string;
+};
 
 interface CategoriesProps {
   categories: Category[];

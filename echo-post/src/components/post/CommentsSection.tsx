@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { MessageCircle, Loader2 } from "lucide-react";
-import { Comment } from "@/types/post";
+import { Comment } from "@/types";
 import CommentForm from "./CommentForm";
 import CommentItem from "./CommentItem";
 
@@ -66,19 +66,7 @@ export default function CommentsSection({
                 onReply={setReplyingTo}
               />
               
-              {/* Replies */}
-              {comment.replies && comment.replies.length > 0 && (
-                <div className="ml-12 space-y-3">
-                  {comment.replies.map((reply) => (
-                    <CommentItem
-                      key={reply.id}
-                      comment={reply}
-                      user={user}
-                      isReply
-                    />
-                  ))}
-                </div>
-              )}
+
               
               {/* Reply Form */}
               {replyingTo === comment.id && user && (

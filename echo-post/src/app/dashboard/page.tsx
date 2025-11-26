@@ -12,7 +12,12 @@ import LatestArticles from "@/components/dash/overview/LatestArticles";
 import TrendingAuthors from "@/components/dash/overview/TrendingAuthors";
 import TrendingStories from "@/components/dash/overview/TrendingStories";
 
-import { Post, Category, Author } from "@/types/glob";
+import { Post, Author } from "@/types";
+
+type Category = {
+  name: string;
+  color: string;
+};
 
 export default function HomePage() {
   const { user, token, initializing } = useAuth();

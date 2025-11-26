@@ -1,6 +1,6 @@
 import { useState, useEffect, RefObject } from "react";
 
-export const useScrollProgress = (elementRef: RefObject<HTMLElement>) => {
+export const useScrollProgress = (elementRef: RefObject<HTMLElement | null>) => {
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {

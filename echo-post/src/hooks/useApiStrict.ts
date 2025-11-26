@@ -12,10 +12,11 @@ export function useApiStrict<T = unknown>() {
     options?: RequestInit,
     optimisticUpdate?: (prev: T | undefined) => T
   ): Promise<ApiResponse<T>> => {
-    setState(prev => ({ 
-      status: 'loading',
-      ...(optimisticUpdate && prev.status === 'success' ? { data: optimisticUpdate(prev.data) } : {})
-    }));
+    if (optimisticUpdate && state.status === 'success') {
+      setState({ status: 'success', data: optimisticUpdate(state.data) });
+    } else {
+      setState({ status: 'loading' });
+    }
 
     try {
       const result = await apiRequest<T>(url, options);

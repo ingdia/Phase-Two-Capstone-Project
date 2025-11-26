@@ -1,5 +1,5 @@
 import { Clock } from "lucide-react";
-import { Post } from "@/types/post";
+import { Post } from "@/types";
 import { getAuthorName, getAuthorInitials } from "@/lib/utils/content";
 import PostActions from "./PostActions";
 
@@ -50,7 +50,7 @@ export default function PostHeader({ post, user, clapped, bookmarked, onLike, on
             <p className="text-sm font-medium text-gray-900">{authorName}</p>
             <p className="text-xs text-gray-500 flex items-center gap-1">
               <Clock className="inline w-3 h-3" />
-              {new Date(post.createdAt).toLocaleDateString()} • {post.readTime}
+              {new Date(post.createdAt).toLocaleDateString()} • 5 min read
             </p>
           </div>
         </div>

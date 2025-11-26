@@ -1,4 +1,4 @@
-import { Comment } from "@/types/post";
+import { Comment } from "@/types";
 import { getAuthorName, getAuthorInitials } from "@/lib/utils/content";
 
 interface CommentItemProps {

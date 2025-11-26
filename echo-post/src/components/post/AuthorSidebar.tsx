@@ -1,5 +1,5 @@
 import { UserPlus, UserMinus } from "lucide-react";
-import { Post } from "@/types/post";
+import { Post } from "@/types";
 import { getAuthorName, getAuthorInitials } from "@/lib/utils/content";
 
 interface AuthorSidebarProps {
@@ -32,9 +32,7 @@ export default function AuthorSidebar({ post, user, following, isAuthor, onFollo
           )}
           <div>
             <p className="font-medium text-black">{authorName}</p>
-            {post.author.bio && (
-              <p className="text-sm text-gray-600 mt-1">{post.author.bio}</p>
-            )}
+
           </div>
         </div>
 

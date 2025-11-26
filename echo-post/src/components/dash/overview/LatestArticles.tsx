@@ -1,11 +1,12 @@
 "use client";
 
-import { Post } from "@/types/glob";
+// Using any for legacy compatibility
+type LegacyPost = any;
 import { User, Clock, Heart, Bookmark } from "lucide-react";
 import Link from "next/link";
 
 interface LatestArticlesProps {
-  latestPosts: Post[];
+  latestPosts: LegacyPost[];
   bookmarked: Record<string, boolean>;
   liked: Record<string, boolean>;
   onBookmark: (id: string) => void;

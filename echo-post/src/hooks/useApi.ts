@@ -36,7 +36,7 @@ export function useApi<T = any>() {
         setState(prev => ({ 
           data: optimisticUpdate ? prev.data : null, 
           loading: false, 
-          error: result.error || 'Request failed' 
+          error: result.error?.message || 'Request failed' 
         }));
       }
       
@@ -48,7 +48,7 @@ export function useApi<T = any>() {
         loading: false, 
         error 
       }));
-      return { success: false, error };
+      return { success: false, error: { code: 'NETWORK_ERROR', message: error } };
     }
   }, []);
 

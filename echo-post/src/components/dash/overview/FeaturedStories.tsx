@@ -1,11 +1,12 @@
 "use client";
 
 import { TrendingUp, Heart } from "lucide-react";
-import { Post } from "@/types/glob";
+// Using any for legacy compatibility
+type LegacyPost = any;
 import Link from "next/link";
 
 interface FeaturedStoriesProps {
-  posts: Post[];
+  posts: LegacyPost[];
 }
 
 const FeaturedStories: React.FC<FeaturedStoriesProps> = ({ posts }) => {
