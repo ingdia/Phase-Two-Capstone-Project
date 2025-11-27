@@ -40,8 +40,9 @@ export async function GET(req: Request) {
         });
 
         // Sort by like count and take top N
+        type PostWithCount = typeof allPosts[0];
         const posts = allPosts
-            .sort((a, b) => (b._count.likes || 0) - (a._count.likes || 0))
+            .sort((a: PostWithCount, b: PostWithCount) => (b._count.likes || 0) - (a._count.likes || 0))
             .slice(0, limit);
 
         return NextResponse.json({ posts });

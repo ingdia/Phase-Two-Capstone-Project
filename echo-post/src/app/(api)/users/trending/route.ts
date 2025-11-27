@@ -24,8 +24,9 @@ export async function GET(req: Request) {
         });
 
         // Sort by follower count and take top N
+        type UserWithCount = typeof users[0];
         const sortedUsers = users
-            .sort((a, b) => b._count.followers - a._count.followers)
+            .sort((a: UserWithCount, b: UserWithCount) => b._count.followers - a._count.followers)
             .slice(0, limit);
 
         // Format the response to match Author type
