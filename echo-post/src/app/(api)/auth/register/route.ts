@@ -26,7 +26,11 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ user, token }, { status: 201 });
   } catch (err: unknown) {
-    console.error(err);
-    return NextResponse.json({ error: "Signup failed" }, { status: 500 });
+    console.error("Registration error:", err);
+    const errorMessage = err instanceof Error ? err.message : "Unknown error";
+    return NextResponse.json({ 
+      error: "Signup failed", 
+      details: process.env.NODE_ENV === 'development' ? errorMessage : undefined 
+    }, { status: 500 });
   }
 }
