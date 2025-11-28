@@ -25,13 +25,13 @@ export async function GET(req: Request) {
 
         // Sort by follower count and take top N
         const sortedUsers = users
-            .sort((a, b) => {
+            .sort((a: typeof users[0], b: typeof users[0]) => {
                 return b._count.followers - a._count.followers;
             })
             .slice(0, limit);
 
         // Format the response to match Author type
-        const authors = sortedUsers.map((user) => ({
+        const authors = sortedUsers.map((user: typeof sortedUsers[0]) => ({
             id: user.id,
             name: user.name || user.username || "Anonymous",
             avatar: user.avatarUrl || "/image/image.png",

@@ -37,7 +37,7 @@ export async function GET(req: Request) {
 
         // Sort by like count and take top N
         const posts = allPosts
-            .sort((a, b) => {
+            .sort((a: typeof allPosts[0], b: typeof allPosts[0]) => {
                 const aLikes = a._count?.likes || 0;
                 const bLikes = b._count?.likes || 0;
                 return bLikes - aLikes;
@@ -45,12 +45,12 @@ export async function GET(req: Request) {
             .slice(0, limit);
 
         // Calculate read time for each post
-        const postsWithReadTime = posts.map((post: any) => {
+        const postsWithReadTime = posts.map((post: typeof posts[0]) => {
             const words = post.content.split(/\s+/).length;
             const readTime = Math.ceil(words / 200);
             return {
                 ...post,
-                tags: post.tags.map((pt: any) => pt.tag),
+                tags: post.tags.map((pt: typeof post.tags[0]) => pt.tag),
                 readTime: `${readTime} min read`,
             };
         });

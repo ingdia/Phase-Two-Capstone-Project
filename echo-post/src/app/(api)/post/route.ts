@@ -24,7 +24,7 @@ export async function GET(req: Request) {
     const tag = q.get("tag") || undefined;
     const author = q.get("author") || undefined;
     const status = q.get("status") || "PUBLISHED"; // only published by default
-    const where: any = {};
+    const where: Record<string, any> = {};
     if (status) where.status = status;
     if (search) {
       where.OR = [
@@ -55,9 +55,9 @@ export async function GET(req: Request) {
     });
 
     return NextResponse.json({
-      items: items.map((p: any) => ({
+      items: items.map((p: typeof items[0]) => ({
         ...p,
-        tags: p.tags.map((pt: any) => pt.tag),
+        tags: p.tags.map((pt: typeof p.tags[0]) => pt.tag),
       })),
       total,
       page,
@@ -89,7 +89,7 @@ export async function POST(req: Request) {
       Array.isArray(tagSlugs) && tagSlugs.length > 0
         ? {
             create: await Promise.all(
-              tagSlugs.map(async (slug: string) => {
+              (tagSlugs as string[]).map(async (slug: string) => {
                 const tag = await prisma.tag.upsert({
                   where: { slug },
                   update: {},
@@ -119,7 +119,7 @@ export async function POST(req: Request) {
 
     // attach tags separately to avoid complex nested creation
     if (Array.isArray(tagSlugs) && tagSlugs.length > 0) {
-      for (const slugTag of tagSlugs) {
+      for (const slugTag of tagSlugs as string[]) {
         const tag = await prisma.tag.upsert({
           where: { slug: slugTag },
           update: {},

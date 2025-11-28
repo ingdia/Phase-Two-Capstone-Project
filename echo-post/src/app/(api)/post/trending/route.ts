@@ -41,7 +41,7 @@ export async function GET(req: Request) {
 
         // Sort by like count and take top N
         const posts = allPosts
-            .sort((a, b) => {
+            .sort((a: typeof allPosts[0], b: typeof allPosts[0]) => {
                 const aLikes = a._count?.likes || 0;
                 const bLikes = b._count?.likes || 0;
                 return bLikes - aLikes;
