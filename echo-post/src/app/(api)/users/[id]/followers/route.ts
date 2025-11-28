@@ -8,7 +8,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       where: { followingId: id },
       include: { follower: { select: { id: true, name: true, username: true, avatarUrl: true } } },
     });
-    return NextResponse.json({ followers: followers.map((f) => f.follower) });
+    return NextResponse.json({ followers: followers.map((f: typeof followers[0]) => f.follower) });
   } catch (err) {
     console.error(err);
     return NextResponse.json({ error: "Failed to fetch followers" }, { status: 500 });
