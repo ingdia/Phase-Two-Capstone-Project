@@ -36,9 +36,12 @@ export async function GET(req: Request) {
         });
 
         // Sort by like count and take top N
-        type PostWithCount = typeof allPosts[0];
         const posts = allPosts
-            .sort((a: PostWithCount, b: PostWithCount) => (b._count.likes || 0) - (a._count.likes || 0))
+            .sort((a, b) => {
+                const aLikes = a._count?.likes || 0;
+                const bLikes = b._count?.likes || 0;
+                return bLikes - aLikes;
+            })
             .slice(0, limit);
 
         // Calculate read time for each post
